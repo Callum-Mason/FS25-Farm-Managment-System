@@ -1,66 +1,37 @@
-name: Deploy to Azure (main)
+name: CI
 
 on:
   push:
+    branches: [ main, develop ]
+  pull_request:
     branches: [ main ]
-  workflow_dispatch:
-
-permissions:
-  id-token: write
-  contents: read
 
 jobs:
-  build-and-deploy:
+  build-and-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Use Node ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: ${{ matrix.node-version }}
+
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-cache-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: npm-cache-
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Build frontend
+        run: npm run build --if-present
 
-      - name: Login to Azure (using AZURE_CREDENTIALS if present)
-        if: ${{ secrets.AZURE_CREDENTIALS != '' }}
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Login to Azure (OIDC fallback)
-        if: ${{ secrets.AZURE_CREDENTIALS == '' }}
-        uses: azure/login@v2
-        with:
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          # client-id is optional when using federated credentials
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-
-      - name: Verify Azure login
-        run: |
-          echo 'Verifying Azure login context'
-          az account show || (echo 'az account show failed — login did not succeed' && exit 1)
-
-      - name: Deploy to App Service
-        uses: azure/webapps-deploy@v2
-        with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          package: .
-
-      - name: Run migrations from CI (optional)
-        if: ${{ secrets.DB_HOST != '' }}
-        env:
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_NAME: ${{ secrets.DB_NAME }}
-        run: |
-          echo "Running migrations from CI against DB host $DB_HOST"
-          node server/database/migrate.cjs
+      - name: Run tests
+        run: npm test
