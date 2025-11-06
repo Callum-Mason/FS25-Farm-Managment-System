@@ -75,7 +75,14 @@ jobs:
         run: |
           APP_NAME=${{ env.AZURE_WEBAPP_NAME }}
           echo "Finding resource group for $APP_NAME"
-          RG=$(az webapp show --name "$APP_NAME" --query resourceGroup -o tsv)
+          # Use az webapp list to find the resource group (no --resource-group required)
+          RG=$(az webapp list --query "[?name=='$APP_NAME'].resourceGroup | [0]" -o tsv)
+          if [ -z "$RG" ]; then
+            echo "Resource group for app '$APP_NAME' not found. Listing available webapps for debugging:"
+            az webapp list --query "[].{name:name,resourceGroup:resourceGroup}" -o table
+            echo "Failing because resource group is required to set app settings."
+            exit 1
+          fi
           echo "Resource group: $RG"
           az webapp config appsettings set --name "$APP_NAME" --resource-group "$RG" --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
 
