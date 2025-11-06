@@ -69,6 +69,16 @@ jobs:
         if: ${{ github.ref == 'refs/heads/main' }}
         run: az account show
 
+      # Disable Oryx remote build on the App Service (only when we logged in via azure/login)
+      - name: Disable Oryx remote build (main)
+        if: ${{ github.ref == 'refs/heads/main' && env.AZURE_PUBLISH_PROFILE == '' }}
+        run: |
+          APP_NAME=${{ env.AZURE_WEBAPP_NAME }}
+          echo "Finding resource group for $APP_NAME"
+          RG=$(az webapp show --name "$APP_NAME" --query resourceGroup -o tsv)
+          echo "Resource group: $RG"
+          az webapp config appsettings set --name "$APP_NAME" --resource-group "$RG" --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false
+
       # Prepare a pre-built artifact to avoid remote Oryx builds (vite is a devDependency)
       - name: Prepare deployment package (main)
         if: ${{ github.ref == 'refs/heads/main' }}
@@ -85,6 +95,7 @@ jobs:
         if: ${{ github.ref == 'refs/heads/main' && env.AZURE_PUBLISH_PROFILE != '' }}
         uses: azure/webapps-deploy@v2
         with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ env.AZURE_PUBLISH_PROFILE }}
           package: deploy.zip
 
