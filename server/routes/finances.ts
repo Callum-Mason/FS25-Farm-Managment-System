@@ -72,13 +72,14 @@ router.post('/:farmId/finances', authenticateToken, verifyFarmMembership, async 
     let finance: Finance | undefined
 
     if (usePostgres) {
+      // Postgres schemas may include a NOT NULL "date" column in finances — provide a date value
       const result = await db.query<Finance>(
         prepareSql(`
-          INSERT INTO finances ("farmId", "gameYear", "gameMonth", "gameDay", type, category, description, amount, "createdByUserId")
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO finances ("farmId", date, "gameYear", "gameMonth", "gameDay", type, category, description, amount, "createdByUserId")
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           RETURNING *
         `, usePostgres),
-        [farmId, farm.currentYear, farm.currentMonth, farm.currentDay, type, category, description, amount, req.userId]
+        [farmId, new Date().toISOString().slice(0, 10), farm.currentYear, farm.currentMonth, farm.currentDay, type, category, description, amount, req.userId]
       )
       finance = result[0]
     } else {

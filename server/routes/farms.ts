@@ -103,23 +103,46 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 
     // If starting funds provided, create opening balance entry
     if (startingFunds && startingFunds > 0) {
-      await db.run(
-        prepareSql(`
-          INSERT INTO finances ("farmId", "gameYear", "gameMonth", "gameDay", type, category, description, amount, "createdByUserId")
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, usePostgres),
-        [
-          farmId,
-          1, // Year 1
-          1, // Month 1 (January)
-          1, // Day 1
-          'income',
-          'Starting Balance',
-          'Opening balance for new farm',
-          startingFunds,
-          req.userId
-        ]
-      )
+      if (usePostgres) {
+        // Some Postgres schemas include a NOT NULL "date" column in finances.
+        // Provide an ISO date string for that column while keeping game date columns.
+        await db.run(
+          prepareSql(`
+            INSERT INTO finances ("farmId", date, "gameYear", "gameMonth", "gameDay", type, category, description, amount, "createdByUserId")
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `, usePostgres),
+          [
+            farmId,
+            new Date().toISOString().slice(0, 10), // YYYY-MM-DD
+            1, // Year 1
+            1, // Month 1 (January)
+            1, // Day 1
+            'income',
+            'Starting Balance',
+            'Opening balance for new farm',
+            startingFunds,
+            req.userId
+          ]
+        )
+      } else {
+        await db.run(
+          prepareSql(`
+            INSERT INTO finances ("farmId", "gameYear", "gameMonth", "gameDay", type, category, description, amount, "createdByUserId")
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `, usePostgres),
+          [
+            farmId,
+            1, // Year 1
+            1, // Month 1 (January)
+            1, // Day 1
+            'income',
+            'Starting Balance',
+            'Opening balance for new farm',
+            startingFunds,
+            req.userId
+          ]
+        )
+      }
     }
 
     const farm = await db.queryOne(
