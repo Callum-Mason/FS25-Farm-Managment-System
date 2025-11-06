@@ -19,6 +19,7 @@ jobs:
       AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
       AZURE_WEBAPP_NAME: ${{ secrets.AZURE_WEBAPP_NAME }}
+      AZURE_PUBLISH_PROFILE: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_F1CEA8979B8F45C4BF337B371B018F02 }}
     strategy:
       matrix:
         node-version: [20.x]
@@ -68,9 +69,18 @@ jobs:
         if: ${{ github.ref == 'refs/heads/main' }}
         run: az account show
 
-      - name: Deploy to App Service (main)
-        if: ${{ github.ref == 'refs/heads/main' }}
+      # If a publish profile secret exists (downloaded from Azure portal), use it for deployment
+      - name: Deploy to App Service using publish profile (main)
+        if: ${{ github.ref == 'refs/heads/main' && env.AZURE_PUBLISH_PROFILE != '' }}
         uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ env.AZURE_PUBLISH_PROFILE }}
+          package: .
+
+      # Otherwise use logged-in credentials to deploy by app name
+      - name: Deploy to App Service (main) using azure login
+        if: ${{ github.ref == 'refs/heads/main' && env.AZURE_PUBLISH_PROFILE == '' }}
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
           package: .
