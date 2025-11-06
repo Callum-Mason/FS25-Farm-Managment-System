@@ -1,0 +1,69 @@
+:root {
+  /* master colours - Light Mode */
+  --colour-primary: 142 56% 25%;
+  --colour-secondary: 38 92% 52%;
+  --colour-surface: 49 63% 96%;
+  --colour-text: 150 15% 10%;
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* primary accents as percentages */
+  --primary-5: hsl(var(--colour-primary) / 0.05);
+  --primary-10: hsl(var(--colour-primary) / 0.10);
+  --primary-20: hsl(var(--colour-primary) / 0.20);
+  --primary-40: hsl(var(--colour-primary) / 0.40);
+
+  /* secondary accents as percentages */
+  --secondary-10: hsl(var(--colour-secondary) / 0.10);
+  --secondary-20: hsl(var(--colour-secondary) / 0.20);
+}
+
+/* Dark Mode Colors */
+.dark {
+  --colour-primary: 142 56% 45%;
+  --colour-secondary: 38 92% 62%;
+  --colour-surface: 150 15% 8%;
+  --colour-text: 49 63% 96%;
+  
+  /* Adjusted accents for dark mode */
+  --primary-5: hsl(var(--colour-primary) / 0.08);
+  --primary-10: hsl(var(--colour-primary) / 0.15);
+  --primary-20: hsl(var(--colour-primary) / 0.25);
+  --primary-40: hsl(var(--colour-primary) / 0.50);
+
+  --secondary-10: hsl(var(--colour-secondary) / 0.15);
+  --secondary-20: hsl(var(--colour-secondary) / 0.25);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: hsl(var(--colour-surface));
+  color: hsl(var(--colour-text));
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark Mode Input Styles */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: rgb(31 41 55);
+  color: rgb(243 244 246);
+  border-color: rgb(75 85 99);
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: rgb(156 163 175);
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  border-color: hsl(var(--colour-primary));
+  --tw-ring-color: hsl(var(--colour-primary));
+}

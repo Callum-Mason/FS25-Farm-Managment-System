@@ -1,0 +1,59 @@
+# GitHub Actions Workflow for Azure Deployment
+
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME || 'your-app-name' }}
+  NODE_VERSION: '20.x'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build application
+      run: |
+        npm run build:frontend
+        npm run build:backend
+
+    - name: Create deployment package
+      run: |
+        mkdir deployment
+        # Copy built backend (dist contains compiled server code)
+        cp -r dist deployment/
+        # Copy package files - Azure will install node_modules with correct native bindings
+        cp package.json deployment/
+        cp package-lock.json deployment/
+        # Update package.json to only have start script and production dependencies
+        cd deployment
+        node -e "
+        const pkg = require('./package.json');
+        pkg.scripts = { start: 'node dist/server/index.js' };
+        delete pkg.devDependencies;
+        require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));
+        "
+        zip -r ../deploy.zip .
+
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        package: deploy.zip

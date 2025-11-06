@@ -1,0 +1,51 @@
+{
+  "name": "fs25-farm-manager",
+  "version": "1.0.0",
+  "description": "Virtual farm management for Farming Simulator 25",
+  "type": "module",
+  "scripts": {
+    "dev": "node --loader ts-node/esm server/index.ts",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "vite build",
+    "build:backend": "tsc --project tsconfig.server.json",
+    "start": "node dist/server/index.js",
+    "migrate": "node server/database/migrate.cjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:api": "cross-env NODE_ENV=test DB_FILE=./data/farm_manager.test.db vitest run tests/api"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "better-sqlite3": "^9.2.2",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "nanoid": "^5.0.4",
+    "pg": "^8.16.3",
+    "pinia": "^2.1.7",
+    "vue": "^3.4.15",
+    "vue-router": "^4.2.5"
+  },
+  "devDependencies": {
+    "@testing-library/vue": "^8.0.1",
+    "@types/bcrypt": "^5.0.2",
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20.11.5",
+    "@types/pg": "^8.10.9",
+    "@types/supertest": "^6.0.2",
+    "@vitejs/plugin-vue": "^5.0.3",
+    "@vue/test-utils": "^2.4.3",
+    "autoprefixer": "^10.4.17",
+    "cross-env": "^7.0.3",
+    "happy-dom": "^12.10.3",
+    "postcss": "^8.4.33",
+    "supertest": "^6.3.4",
+    "tailwindcss": "^3.4.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.12",
+    "vitest": "^1.2.1"
+  }
+}
