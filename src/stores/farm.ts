@@ -13,6 +13,7 @@ export interface Farm {
   currentMonth: number
   currentDay: number
   daysPerMonth: number
+  areaUnit?: string
   userRole?: string
 }
 
@@ -57,7 +58,7 @@ export const useFarmStore = defineStore('farm', () => {
     return farm
   }
 
-  async function updateFarm(farmId: number, updates: Partial<Pick<Farm, 'name' | 'mapName' | 'currency'>>) {
+  async function updateFarm(farmId: number, updates: Partial<Pick<Farm, 'name' | 'mapName' | 'currency' | 'daysPerMonth' | 'areaUnit'>>) {
     const farm = await api.patch(`/farms/${farmId}`, updates)
     const index = farms.value.findIndex(f => f.id === farmId)
     if (index !== -1) {

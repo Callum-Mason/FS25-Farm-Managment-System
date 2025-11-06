@@ -53,16 +53,16 @@
             </div>
           </div>
           
-          <div>
-            <label class="block text-sm font-medium mb-2">Size (hectares)</label>
-            <input
-              v-model.number="newField.sizeHectares"
-              type="number"
-              step="0.1"
-              required
-              class="w-full px-4 py-2 border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-2">Size ({{ farmStore.currentFarm?.areaUnit === 'acres' ? 'acres' : 'hectares' }})</label>
+                    <input
+                      v-model.number="newFieldDisplaySize"
+                      type="number"
+                      step="0.1"
+                      required
+                      class="w-full px-4 py-2 border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
 
           <div class="flex gap-4 pt-4">
             <button
@@ -124,6 +124,25 @@ const newField = ref({
   fieldNumber: 1,
   name: '',
   sizeHectares: 10
+})
+
+// Conversion helpers
+const HA_TO_AC = 2.47105381
+function hectaresToAcres(ha: number) { return ha * HA_TO_AC }
+function acresToHectares(ac: number) { return ac / HA_TO_AC }
+
+import { computed, watch } from 'vue'
+
+// Display value for size input — shows value in selected unit but stores in hectares
+const newFieldDisplaySize = computed({
+  get() {
+    const unit = farmStore.currentFarm?.areaUnit || 'hectares'
+    return unit === 'acres' ? Number((hectaresToAcres(newField.value.sizeHectares || 0)).toFixed(2)) : newField.value.sizeHectares
+  },
+  set(val: number) {
+    const unit = farmStore.currentFarm?.areaUnit || 'hectares'
+    newField.value.sizeHectares = unit === 'acres' ? acresToHectares(val || 0) : (val || 0)
+  }
 })
 
 onMounted(async () => {

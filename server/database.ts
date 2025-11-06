@@ -181,6 +181,7 @@ async function runMigrations() {
         name TEXT NOT NULL,
         "mapName" TEXT NOT NULL,
         currency TEXT DEFAULT 'GBP',
+        "areaUnit" TEXT DEFAULT 'hectares',
         "createdByUserId" INTEGER NOT NULL,
         "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
         "currentYear" INTEGER DEFAULT 1,
@@ -349,6 +350,10 @@ async function runMigrations() {
           IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
                         WHERE table_name='farms' AND column_name='daysPerMonth') THEN
             ALTER TABLE farms ADD COLUMN "daysPerMonth" INTEGER DEFAULT 28;
+          END IF;
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                        WHERE table_name='farms' AND column_name='areaUnit') THEN
+            ALTER TABLE farms ADD COLUMN "areaUnit" TEXT DEFAULT 'hectares';
           END IF;
         END $$;
       `)
@@ -681,6 +686,13 @@ async function runMigrations() {
       CREATE INDEX IF NOT EXISTS idx_fieldProductionRecords_farm ON fieldProductionRecords(farmId);
       CREATE INDEX IF NOT EXISTS idx_fieldProductionRecords_status ON fieldProductionRecords(status);
     `)
+    
+    // Ensure areaUnit column exists in SQLite farms table (safe add)
+    try {
+      await adapter.exec(`ALTER TABLE farms ADD COLUMN areaUnit TEXT DEFAULT 'hectares';`)
+    } catch (error) {
+      // If column already exists this will fail on SQLite; ignore the error
+    }
   }
 }
 

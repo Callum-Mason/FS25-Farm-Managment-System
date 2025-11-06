@@ -73,6 +73,19 @@
           <p class="text-sm text-text/60 mt-1">Set how many days are in each month (affects game date progression)</p>
         </div>
 
+        <div>
+          <label class="block text-sm font-medium text-text mb-2">Field Size Units</label>
+          <select
+            v-model="farmForm.areaUnit"
+            :disabled="!isOwner || isUpdating"
+            class="w-full px-4 py-2 border-2 border-primary/20 rounded-lg focus:outline-none focus:border-primary disabled:bg-gray-100"
+          >
+            <option value="hectares">Hectares (ha)</option>
+            <option value="acres">Acres (ac)</option>
+          </select>
+          <p class="text-sm text-text/60 mt-1">Choose how field sizes are displayed and entered.</p>
+        </div>
+
         <button
           v-if="isOwner"
           type="submit"
@@ -402,7 +415,8 @@ const farmForm = ref({
   name: '',
   mapName: '',
   currency: 'GBP',
-  daysPerMonth: 28
+  daysPerMonth: 28,
+  areaUnit: 'hectares'
 })
 
 const dateJumpForm = ref({
@@ -525,7 +539,8 @@ async function loadFarmData() {
       name: farm.name,
       mapName: farm.mapName,
       currency: farm.currency,
-      daysPerMonth: farm.daysPerMonth || 28
+      daysPerMonth: farm.daysPerMonth || 28,
+      areaUnit: (farm as any).areaUnit || 'hectares'
     }
     
     // Initialize date jump form with current date

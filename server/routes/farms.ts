@@ -308,7 +308,7 @@ router.patch('/:farmId', authenticateToken, verifyFarmMembership, async (req: Au
       return res.status(403).json({ error: 'Only farm owners can update farm details' })
     }
 
-    const { name, mapName, currency, daysPerMonth } = req.body
+  const { name, mapName, currency, daysPerMonth, areaUnit } = req.body
     const db = getDbAdapter()
     const usePostgres = isPostgres()
 
@@ -330,6 +330,10 @@ router.patch('/:farmId', authenticateToken, verifyFarmMembership, async (req: Au
     if (daysPerMonth !== undefined) {
       updates.push('"daysPerMonth" = ?')
       values.push(daysPerMonth)
+    }
+    if (areaUnit !== undefined) {
+      updates.push('"areaUnit" = ?')
+      values.push(areaUnit)
     }
 
     if (updates.length === 0) {

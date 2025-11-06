@@ -2,8 +2,8 @@
   <div class="border-2 border-primary/20 dark:border-gray-700 rounded-card p-6 bg-white dark:bg-gray-800">
     <div class="flex justify-between items-start mb-4">
       <div>
-        <h3 class="text-xl font-bold text-primary">Field {{ field.fieldNumber }}: {{ field.name }}</h3>
-        <p class="text-text/60">{{ field.sizeHectares }} hectares</p>
+  <h3 class="text-xl font-bold text-primary">Field {{ field.fieldNumber }}: {{ field.name }}</h3>
+  <p class="text-text/60">{{ displaySize }} {{ unitLabelFull }}</p>
       </div>
       <div class="flex gap-2">
         <button
@@ -399,7 +399,7 @@
               <span class="font-bold text-lg ml-2 text-green-700 dark:text-green-400">{{ formatCurrency(totalCosts) }}</span>
             </div>
             <div v-if="field.sizeHectares && totalCosts" class="col-span-2 text-xs text-gray-600 dark:text-gray-400">
-              Cost per hectare: {{ formatCurrency(totalCosts / field.sizeHectares) }}/ha
+              Cost per {{ unitLabelShort }}: {{ formatCurrency(costPerUnit) }}/{{ unitLabelShort }}
             </div>
           </div>
           <p v-else class="text-sm text-gray-600 dark:text-gray-400">
@@ -815,6 +815,28 @@ const totalCosts = computed(() => {
     (props.field.equipmentCost || 0) +
     (props.field.otherCosts || 0)
   )
+})
+
+// Area unit conversion and display helpers
+const HA_TO_AC = 2.47105381
+function hectaresToAcres(ha: number) { return ha * HA_TO_AC }
+function acresToHectares(ac: number) { return ac / HA_TO_AC }
+
+const unitIsAcres = computed(() => farmStore.currentFarm?.areaUnit === 'acres')
+const displaySize = computed(() => {
+  const ha = props.field.sizeHectares || 0
+  return unitIsAcres.value ? Number(hectaresToAcres(ha).toFixed(2)) : Number(ha.toFixed(2))
+})
+const unitLabelFull = computed(() => unitIsAcres.value ? 'acres' : 'hectares')
+const unitLabelShort = computed(() => unitIsAcres.value ? 'ac' : 'ha')
+const costPerUnit = computed(() => {
+  const ha = props.field.sizeHectares || 0
+  if (!ha || !totalCosts.value) return 0
+  if (unitIsAcres.value) {
+    const acres = hectaresToAcres(ha)
+    return acres ? totalCosts.value / acres : 0
+  }
+  return totalCosts.value / ha
 })
 
 function formatCurrency(amount: number | undefined): string {

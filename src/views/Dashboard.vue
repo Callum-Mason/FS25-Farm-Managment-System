@@ -64,7 +64,7 @@
         <div class="space-y-4">
           <div class="flex justify-between items-center">
             <span class="text-text/60">Total Hectares</span>
-            <span class="text-lg font-bold text-primary">{{ totalHectares.toFixed(1) }} ha</span>
+            <span class="text-lg font-bold text-primary">{{ totalDisplay.toFixed(1) }} {{ unitIsAcres ? 'ac' : 'ha' }}</span>
           </div>
           
           <div v-if="cropBreakdown.length > 0">
@@ -96,7 +96,7 @@
                   <div class="w-3 h-3 rounded-full" :style="{ backgroundColor: getPieColor(index) }"></div>
                   <span>{{ crop.crop }}</span>
                 </div>
-                <span class="font-medium">{{ crop.hectares.toFixed(1) }} ha ({{ crop.percentage.toFixed(1) }}%)</span>
+                <span class="font-medium">{{ (unitIsAcres ? (crop.hectares * HA_TO_AC) : crop.hectares).toFixed(1) }} {{ unitIsAcres ? 'ac' : 'ha' }} ({{ crop.percentage.toFixed(1) }}%)</span>
               </div>
             </div>
           </div>
@@ -222,6 +222,11 @@ const totalHectares = computed(() => {
   if (!Array.isArray(fields.value)) return 0
   return fields.value.reduce((sum, f) => sum + (f.sizeHectares || 0), 0)
 })
+
+// Unit handling
+const HA_TO_AC = 2.47105381
+const unitIsAcres = computed(() => farmStore.currentFarm?.areaUnit === 'acres')
+const totalDisplay = computed(() => unitIsAcres.value ? totalHectares.value * HA_TO_AC : totalHectares.value)
 
 const cropBreakdown = computed(() => {
   if (!Array.isArray(fields.value)) return []
