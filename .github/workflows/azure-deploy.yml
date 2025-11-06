@@ -1,59 +1,66 @@
-# GitHub Actions Workflow for Azure Deployment
-
-name: Deploy to Azure
+name: Deploy to Azure (main)
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
 
-env:
-  AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME || 'your-app-name' }}
-  NODE_VERSION: '20.x'
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-    
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Build application
-      run: |
-        npm run build:frontend
-        npm run build:backend
+      - name: Build
+        run: npm run build
 
-    - name: Create deployment package
-      run: |
-        mkdir deployment
-        # Copy built backend (dist contains compiled server code)
-        cp -r dist deployment/
-        # Copy package files - Azure will install node_modules with correct native bindings
-        cp package.json deployment/
-        cp package-lock.json deployment/
-        # Update package.json to only have start script and production dependencies
-        cd deployment
-        node -e "
-        const pkg = require('./package.json');
-        pkg.scripts = { start: 'node dist/server/index.js' };
-        delete pkg.devDependencies;
-        require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));
-        "
-        zip -r ../deploy.zip .
+      - name: Login to Azure (using AZURE_CREDENTIALS if present)
+        if: ${{ secrets.AZURE_CREDENTIALS != '' }}
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Deploy to Azure Web App
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        package: deploy.zip
+      - name: Login to Azure (OIDC fallback)
+        if: ${{ secrets.AZURE_CREDENTIALS == '' }}
+        uses: azure/login@v2
+        with:
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          # client-id is optional when using federated credentials
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+
+      - name: Verify Azure login
+        run: |
+          echo 'Verifying Azure login context'
+          az account show || (echo 'az account show failed — login did not succeed' && exit 1)
+
+      - name: Deploy to App Service
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          package: .
+
+      - name: Run migrations from CI (optional)
+        if: ${{ secrets.DB_HOST != '' }}
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+        run: |
+          echo "Running migrations from CI against DB host $DB_HOST"
+          node server/database/migrate.cjs
