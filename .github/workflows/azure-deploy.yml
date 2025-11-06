@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -34,4 +38,33 @@ jobs:
         run: npm run build --if-present
 
       - name: Run tests
-        run: npm test
+        # Use test:api to run tests with a separate test DB and NODE_ENV=test
+        # Skip tests on main branch if you want to deploy directly
+        if: ${{ github.ref != 'refs/heads/main' }}
+        run: npm run test:api
+
+      # Deploy only when pushing to main
+      - name: Login to Azure (using AZURE_CREDENTIALS if present)
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to Azure (OIDC fallback)
+        if: ${{ github.ref == 'refs/heads/main' && !secrets.AZURE_CREDENTIALS }}
+        uses: azure/login@v2
+        with:
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+
+      - name: Verify Azure login (main deploy)
+        if: ${{ github.ref == 'refs/heads/main' }}
+        run: az account show
+
+      - name: Deploy to App Service (main)
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+          package: .
