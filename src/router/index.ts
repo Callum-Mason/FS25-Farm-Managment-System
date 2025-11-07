@@ -111,7 +111,12 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresFarm && authStore.isAuthenticated) {
     // Ensure farms are loaded
     if (farmStore.farms.length === 0) {
-      await farmStore.fetchFarms()
+      try {
+        await farmStore.fetchFarms()
+      } catch (err) {
+        // console.error('Failed to load farms during route guard:', err)
+        // Don't block navigation on transient API failures — allow route to continue
+      }
     }
     
     // If no farm exists, redirect to create-farm

@@ -25,7 +25,12 @@ export const useThemeStore = defineStore('theme', () => {
 
   // Watch for changes and apply theme
   watch(isDark, () => {
-    localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
+    try {
+      // Don't re-write theme if we're suppressing auto-writes due to logout
+      if (!sessionStorage.getItem('suppressAutoSet')) {
+        localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
+      }
+    } catch (e) {}
     applyTheme()
   }, { immediate: true })
 

@@ -591,8 +591,28 @@ function isActive(path: string) {
 }
 
 function handleLogout() {
+  // Set suppress flag so other stores don't immediately re-persist values
+  try { sessionStorage.setItem('suppressAutoSet', '1') } catch (e) {}
   authStore.logout()
-  router.push('/login')
+  // Extra safeguard: explicitly clear all persisted auth/farm keys
+  try {
+    localStorage.removeItem('currentFarmId')
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    // Also clear theme to ensure a clean state on logout
+    localStorage.removeItem('theme')
+  } catch (e) {
+    // ignore
+  }
+  // Navigate to login and force a hard reload to ensure any in-memory stores re-init cleanly
+  router.replace('/login')
+  try {
+    setTimeout(() => {
+      // Remove suppression flag then reload to ensure no other code re-writes keys during navigation
+      try { sessionStorage.removeItem('suppressAutoSet') } catch (e) {}
+      window.location.reload()
+    }, 50)
+  } catch (e) {}
 }
 
 function handleFarmChange() {

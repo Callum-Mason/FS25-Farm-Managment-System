@@ -43,10 +43,41 @@ export const useFarmStore = defineStore('farm', () => {
 
   async function fetchFarms() {
     farms.value = await api.get('/farms')
-    console.log('Fetched farms:', farms.value)
-    if (farms.value.length > 0 && !currentFarmId.value) {
+    // console.log('Fetched farms:', farms.value)
+    const fetchedIds = farms.value.map(f => Number(f.id))
+    // console.log('Fetched farm ids:', fetchedIds, 'currentFarmId (before):', currentFarmId.value)
+
+    if (farms.value.length === 0) {
+      // No farms available for this user
+      currentFarmId.value = null
+      localStorage.removeItem('currentFarmId')
+      return
+    }
+
+    // If we don't have a current farm, default to the first one
+    if (!currentFarmId.value) {
       currentFarmId.value = farms.value[0].id
-      localStorage.setItem('currentFarmId', String(currentFarmId.value))
+      // Only persist to localStorage if logout suppression flag is not set
+      try {
+        if (!sessionStorage.getItem('suppressAutoSet')) {
+          localStorage.setItem('currentFarmId', String(currentFarmId.value))
+        }
+      } catch (e) {}
+      return
+    }
+
+    // If currentFarmId is set (from localStorage) but no longer present in the fetched farms
+    // (e.g. localStorage was stale), reset it to the first available farm.
+    const exists = farms.value.some(f => Number(f.id) === Number(currentFarmId.value))
+    // console.log('Current farm exists in fetched list?', exists)
+    if (!exists) {
+      currentFarmId.value = Number(farms.value[0].id)
+      try {
+        if (!sessionStorage.getItem('suppressAutoSet')) {
+          localStorage.setItem('currentFarmId', String(currentFarmId.value))
+        }
+      } catch (e) {}
+      // console.log('Reset currentFarmId to first fetched farm:', currentFarmId.value)
     }
   }
 
@@ -54,7 +85,11 @@ export const useFarmStore = defineStore('farm', () => {
     const farm = await api.post('/farms', { name, mapName, startingFunds })
     farms.value.push(farm)
     currentFarmId.value = farm.id
-    localStorage.setItem('currentFarmId', String(currentFarmId.value))
+    try {
+      if (!sessionStorage.getItem('suppressAutoSet')) {
+        localStorage.setItem('currentFarmId', String(currentFarmId.value))
+      }
+    } catch (e) {}
     return farm
   }
 
@@ -97,14 +132,22 @@ export const useFarmStore = defineStore('farm', () => {
     await fetchFarms() // Refresh the farms list
     if (response.farm) {
       currentFarmId.value = response.farm.id
-      localStorage.setItem('currentFarmId', String(response.farm.id))
+      try {
+        if (!sessionStorage.getItem('suppressAutoSet')) {
+          localStorage.setItem('currentFarmId', String(response.farm.id))
+        }
+      } catch (e) {}
     }
     return response
   }
 
   function setCurrentFarm(farmId: number) {
     currentFarmId.value = farmId
-    localStorage.setItem('currentFarmId', String(farmId))
+    try {
+      if (!sessionStorage.getItem('suppressAutoSet')) {
+        localStorage.setItem('currentFarmId', String(farmId))
+      }
+    } catch (e) {}
   }
 
   async function deleteFarm(farmId: number) {
@@ -128,15 +171,15 @@ export const useFarmStore = defineStore('farm', () => {
   async function retreatDate() {
     if (!currentFarmId.value) return
     try {
-      console.log('Calling retreat-date endpoint for farm:', currentFarmId.value)
+      // console.log('Calling retreat-date endpoint for farm:', currentFarmId.value)
       const updatedFarm = await api.post(`/farms/${currentFarmId.value}/retreat-date`, {})
-      console.log('Received updated farm:', updatedFarm)
+      // console.log('Received updated farm:', updatedFarm)
       const index = farms.value.findIndex(f => f.id === currentFarmId.value)
       if (index !== -1) {
         farms.value[index] = { ...farms.value[index], ...updatedFarm }
       }
     } catch (error: any) {
-      console.error('Retreat date error:', error)
+      // console.error('Retreat date error:', error)
       // If we hit the Year 1 boundary, just ignore the error
       if (error?.response?.status !== 400) {
         throw error

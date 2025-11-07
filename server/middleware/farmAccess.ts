@@ -13,21 +13,23 @@ export function verifyFarmMembership(req: AuthRequest, res: Response, next: Next
 
   const db = getDbAdapter()
   const usePostgres = isPostgres()
-  
-  db.queryOne<{ role: string }>(
-    prepareSql('SELECT role FROM "farmMembers" WHERE "farmId" = ? AND "userId" = ?', usePostgres),
-    [farmId, userId]
-  ).then(member => {
-    if (!member) {
-      return res.status(403).json({ error: 'You are not a member of this farm' })
-    }
+  const sql = prepareSql('SELECT role FROM "farmMembers" WHERE "farmId" = ? AND "userId" = ?', usePostgres)
+  // console.log('verifyFarmMembership: checking membership - sql=', sql, 'params=', [farmId, userId])
 
-    req.body._userRole = member.role
-    next()
-  }).catch(error => {
-    console.error('Farm membership check error:', error)
-    res.status(500).json({ error: 'Failed to verify farm membership' })
-  })
+  db.queryOne<{ role: string }>(sql, [farmId, userId])
+    .then(member => {
+      // console.log('verifyFarmMembership: query result for farmId=', farmId, 'userId=', userId, '=>', member)
+      if (!member) {
+        return res.status(403).json({ error: 'You are not a member of this farm' })
+      }
+
+      req.body._userRole = member.role
+      next()
+    })
+    .catch(error => {
+      // console.error('Farm membership check error:', error)
+      res.status(500).json({ error: 'Failed to verify farm membership' })
+    })
 }
 
 export function requireRole(allowedRoles: string[]) {

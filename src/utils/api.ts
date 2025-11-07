@@ -25,8 +25,8 @@ class ApiClient {
       headers: this.getHeaders()
     })
     
-    // Handle authentication failures globally
-    if (response.status === 401 || response.status === 403) {
+    // Handle authentication failure (401) globally — don't treat permission (403) as a sign-out
+    if (response.status === 401) {
       try {
         const authStore = useAuthStore()
         authStore.logout()
@@ -52,8 +52,8 @@ class ApiClient {
       body: JSON.stringify(data)
     })
     
-    // Handle authentication failures globally
-    if (response.status === 401 || response.status === 403) {
+    // Handle authentication failure (401) globally — allow callers to handle 403 permission errors
+    if (response.status === 401) {
       try {
         const authStore = useAuthStore()
         authStore.logout()
@@ -86,7 +86,7 @@ class ApiClient {
       
       clearTimeout(timeoutId)
       
-      if (response.status === 401 || response.status === 403) {
+      if (response.status === 401) {
         try {
           const authStore = useAuthStore()
           authStore.logout()
@@ -99,7 +99,7 @@ class ApiClient {
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('API error response:', errorText)
+        // console.error('API error response:', errorText)
         throw new Error(`API error: ${response.statusText}`)
       }
       
@@ -119,7 +119,7 @@ class ApiClient {
       headers: this.getHeaders()
     })
     
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
       try {
         const authStore = useAuthStore()
         authStore.logout()

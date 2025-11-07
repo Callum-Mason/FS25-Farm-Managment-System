@@ -275,19 +275,22 @@ function getStrokeDashOffset(index: number): number {
 
 onMounted(async () => {
   try {
-    console.log('=== Dashboard Mounted ===')
-    console.log('Loading state:', loading.value)
-    console.log('currentFarmId:', farmStore.currentFarmId)
-    console.log('farms count:', farmStore.farms.length)
+    // Ensure we have an up-to-date farms list and currentFarmId before proceeding
+    await farmStore.fetchFarms()
+  // console.log('=== Dashboard Mounted ===')
+  // console.log('Loading state:', loading.value)
+  // console.log('currentFarmId:', farmStore.currentFarmId)
+  // console.log('farms count:', farmStore.farms.length)
     
-    if (!farmStore.currentFarmId) {
-      console.error('No farm selected!')
+    // Ensure the selected farm actually exists in the fetched farms list
+    if (!farmStore.currentFarmId || !farmStore.currentFarm) {
+      // console.error('No valid farm selected! currentFarmId:', farmStore.currentFarmId, 'currentFarm:', farmStore.currentFarm)
       loading.value = false
-      console.log('Set loading to false (no farm)')
+      // console.log('Set loading to false (no valid farm)')
       return
     }
     
-    console.log('Fetching dashboard data for farm:', farmStore.currentFarmId)
+    // console.log('Fetching dashboard data for farm:', farmStore.currentFarmId)
     
     await Promise.all([
       fetchFinances(),
@@ -296,18 +299,17 @@ onMounted(async () => {
       fetchEquipment()
     ])
     
-    console.log('=== Dashboard Data Loaded ===')
-    console.log('Finances:', finances.value.length)
-    console.log('Fields:', fields.value.length)
-    console.log('Animals:', animals.value.length)
-    console.log('Equipment:', equipment.value.length)
+  // console.log('=== Dashboard Data Loaded ===')
+  // console.log('Finances:', finances.value.length)
+  // console.log('Fields:', fields.value.length)
+  // console.log('Animals:', animals.value.length)
+  // console.log('Equipment:', equipment.value.length)
     
   } catch (error) {
-    console.error('=== Dashboard Error ===', error)
+    // console.error('=== Dashboard Error ===', error)
   } finally {
-    console.log('Setting loading to false in finally block')
     loading.value = false
-    console.log('Loading is now:', loading.value)
+    // console.log('Loading is now:', loading.value)
   }
 })
 
@@ -315,14 +317,14 @@ async function fetchFinances() {
   if (!farmStore.currentFarmId) return
   
   try {
-    console.log('Fetching finances for farm:', farmStore.currentFarmId)
+  // console.log('Fetching finances for farm:', farmStore.currentFarmId)
     const result = await api.get(`/farms/${farmStore.currentFarmId}/finances`)
-    console.log('Finances API result:', result)
+  // console.log('Finances API result:', result)
     // API returns { finances: [...], balance: number }
     finances.value = result.finances || []
-    console.log('Finances loaded:', finances.value.length)
+    // console.log('Finances loaded:', finances.value.length)
   } catch (error) {
-    console.error('Failed to fetch finances:', error)
+    // console.error('Failed to fetch finances:', error)
     finances.value = []
   }
 }
@@ -331,12 +333,12 @@ async function fetchFields() {
   if (!farmStore.currentFarmId) return
   
   try {
-    console.log('Fetching fields for farm:', farmStore.currentFarmId)
-    fields.value = await api.get(`/farms/${farmStore.currentFarmId}/fields`)
-    console.log('Fields loaded:', fields.value.length)
-    console.log('Fields data:', fields.value)
+  // console.log('Fetching fields for farm:', farmStore.currentFarmId)
+  fields.value = await api.get(`/farms/${farmStore.currentFarmId}/fields`)
+  // console.log('Fields loaded:', fields.value.length)
+  // console.log('Fields data:', fields.value)
   } catch (error) {
-    console.error('Failed to fetch fields:', error)
+    // console.error('Failed to fetch fields:', error)
     fields.value = []
   }
 }
@@ -345,11 +347,11 @@ async function fetchAnimals() {
   if (!farmStore.currentFarmId) return
   
   try {
-    console.log('Fetching animals for farm:', farmStore.currentFarmId)
+    // console.log('Fetching animals for farm:', farmStore.currentFarmId)
     animals.value = await api.get(`/farms/${farmStore.currentFarmId}/animals`)
-    console.log('Animals loaded:', animals.value.length)
+    // console.log('Animals loaded:', animals.value.length)
   } catch (error) {
-    console.error('Failed to fetch animals:', error)
+    // console.error('Failed to fetch animals:', error)
     animals.value = []
   }
 }
@@ -358,11 +360,11 @@ async function fetchEquipment() {
   if (!farmStore.currentFarmId) return
   
   try {
-    console.log('Fetching equipment for farm:', farmStore.currentFarmId)
+    // console.log('Fetching equipment for farm:', farmStore.currentFarmId)
     equipment.value = await api.get(`/farms/${farmStore.currentFarmId}/equipment`)
-    console.log('Equipment loaded:', equipment.value.length)
+    // console.log('Equipment loaded:', equipment.value.length)
   } catch (error) {
-    console.error('Failed to fetch equipment:', error)
+    // console.error('Failed to fetch equipment:', error)
     equipment.value = []
   }
 }

@@ -17,8 +17,10 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
     const secret = process.env.JWT_SECRET || 'default-secret'
     const decoded = jwt.verify(token, secret) as { userId: number }
     req.userId = decoded.userId
+    // console.log('authenticateToken: token verified for userId=', req.userId)
     next()
   } catch (err) {
+    // console.error('authenticateToken: token verification failed:', err)
     return res.status(403).json({ error: 'Invalid or expired token' })
   }
 }
