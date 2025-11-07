@@ -8,6 +8,7 @@ data/*.db-*
 .DS_Store
 *.log
 *.zip
+.github/copilot-instructions.md
 
 # Azure deployment temporary files
 infra/main.parameters.temp.json
