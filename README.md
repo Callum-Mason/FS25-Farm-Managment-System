@@ -13,35 +13,43 @@
 
 [Features](#-features) • [Quick Start](#-quick-start) • [Development](#-development-setup) • [Deployment](#-azure-deployment-with-github-actions)
 
-</div>
+ </div>
+
 
 ---
 
 ## ✨ Features
 
-### 🌾 **Field Management**
+```text
+FS25-Farm-Managment-System/
+
 - Track crop growth stages, fertiliser application, and weed states
 - Visual field cards with status indicators
-- Field-specific notes and hectare tracking
+**Access the app:** `http://localhost:3000`
 
 ### 🔄 **Crop Rotation Planner**
+
 - Intelligent 4-year rotation suggestions based on UK farming best practices
 - Prevents disease buildup and optimizes soil health
 - Season-specific planting recommendations
 
 ### 💰 **Financial Ledger**
+
 - Complete income/expense tracking with real-time balance calculations
 - Category-based organization (Sales, Purchases, Equipment, etc.)
 
 ### 🐄 **Livestock Management**
+
 - Track animal counts by type (Cows, Sheep, Chickens, Pigs)
 - Monitor feed requirements and productivity
 
 ### 🚜 **Equipment Registry**
+
 - Machinery tracking with ownership status (owned/leased)
 - Daily cost calculations and condition monitoring
 
 ### 👥 **Multi-User Collaboration**
+
 - Role-based access control (Owner, Editor, Viewer)
 - Time-limited join codes for farm invitations
 
@@ -57,15 +65,16 @@
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/Callum-Mason/FS25-FMS.git
-cd FS25-FMS
+# Clone the repository (correct repo name)
+git clone https://github.com/Callum-Mason/FS25-Farm-Managment-System.git
+cd FS25-Farm-Managment-System
 
 # Install dependencies
 npm install
 
-# Create environment file
-cp .env.example .env
+# Create environment file (PowerShell)
+Copy-Item .env.example .env
+# On macOS / Linux use: cp .env.example .env
 
 # Start the development server
 npm run dev
@@ -85,7 +94,7 @@ npm run dev
 ### Project Structure
 
 ```
-FS25-FMS/
+FS25-Farm-Managment-System/
 ├── server/                 # Backend (Node.js + Express)
 │   ├── routes/            # API endpoints
 │   ├── middleware/        # Auth & permissions
@@ -96,7 +105,7 @@ FS25-FMS/
 │   ├── stores/            # Pinia state management
 │   └── router/            # Vue Router config
 ├── tests/                  # Test suites
-└── infra/                  # Azure deployment (Bicep)
+└── infrastructure/         # Azure deployment (Bicep)
 ```
 
 ### Available Scripts
@@ -119,6 +128,7 @@ npm start                # Run production build
 # Testing
 npm test                 # Run all tests
 npm run test:watch       # Run tests in watch mode
+npm run test:api         # Run API tests (test:api)
 ```
 
 ### Database Setup
@@ -133,7 +143,8 @@ npm run migrate
 node server/database/migrate.cjs
 ```
 
-**What it does:**
+- **What it does:**
+
 - ✅ Creates all tables (users, farms, fields, animals, equipment, finances, etc.)
 - ✅ Sets up indexes for performance
 - ✅ Creates triggers and helper functions
@@ -184,10 +195,11 @@ Deploy your Farm Management System to Azure with automated CI/CD using GitHub Ac
 - **Azure PostgreSQL Flexible Server** (B1ms tier) - ~£10/month
 - **Total cost:** ~£50/month
 
-### Prerequisites
+### Azure prerequisites
 
 1. **Azure Account** - [Create free account](https://azure.microsoft.com/free/)
 2. **Azure CLI** - Install via:
+
    ```powershell
    winget install Microsoft.AzureCLI
    ```
@@ -203,14 +215,14 @@ az login
 az account set --subscription "Your-Subscription-Name"
 
 # Clone and navigate to repository
-git clone https://github.com/Callum-Mason/FS25-FMS.git
-cd FS25-FMS
+git clone https://github.com/Callum-Mason/FS25-Farm-Managment-System.git
+cd FS25-Farm-Managment-System
 
 # Install dependencies
 npm install
 
 # Run deployment script
-.\deploy.ps1
+.\deploy-infrastructure.ps1
 ```
 
 The deployment script will:
@@ -434,498 +446,6 @@ Built for the Farming Simulator 25 community with ❤️
 <div align="center">
 
 ### 🚜 Happy Farming! 🌾
-
-[⬆ Back to Top](#-fs25-farm-management-system)
-
-</div>
-- **Application Insights**: Performance monitoring and logging
-- **GitHub Actions**: Automated CI/CD pipeline
-
-### Prerequisites
-
-```powershell
-# Install Azure CLI
-winget install Microsoft.AzureCLI
-
-# Login to Azure
-az login
-
-# Set subscription (if multiple)
-az account set --subscription "Your-Subscription-Name"
-```
-
-### Deployment Steps
-
-1. **Clone and Install**
-   ```bash
-   git clone <repository-url>
-   cd FS25-FMS
-   npm install
-   ```
-
-2. **Run Deployment Script**
-   ```powershell
-   .\deploy.ps1
-   ```
-
-   The script will:
-   - ✅ Create resource group
-   - ✅ Provision PostgreSQL Flexible Server
-   - ✅ Set up App Service with Node 20 LTS
-   - ✅ Configure Key Vault for secrets
-   - ✅ Enable Application Insights
-   - ✅ Set up GitHub Actions workflow
-   - ✅ Configure CORS and connection strings
-
-3. **Push to Deploy**
-   ```bash
-   git add .
-   git commit -m "Initial deployment"
-   git push
-   ```
-
-   GitHub Actions automatically:
-   - Builds frontend (Vite)
-   - Compiles TypeScript backend
-   - Deploys to Azure App Service
-   - Runs database migrations
-
-### Environment Variables
-
-**Required in Azure App Service Configuration:**
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgres://user:pass@host/db` |
-| `JWT_SECRET` | Secret for JWT tokens | `your-secret-key-here` |
-| `NODE_ENV` | Environment mode | `production` |
-| `DB_TYPE` | Database type | `postgres` |
-
-**Managed via Key Vault:**
-- `db-password`: PostgreSQL admin password
-- `jwt-secret`: JWT signing secret
-
----
-
-## �️ Tech Stack
-
-### Backend
-- **Runtime**: Node.js 20 LTS
-- **Framework**: Express.js
-- **Database**: PostgreSQL (Production) / SQLite (Development)
-- **ORM**: Custom dual-adapter pattern
-- **Authentication**: JWT with bcrypt
-- **Validation**: Express middleware
-
-### Frontend
-- **Framework**: Vue 3 (Composition API)
-- **Language**: TypeScript
-- **State Management**: Pinia
-- **Routing**: Vue Router
-- **Styling**: Tailwind CSS
-- **Build Tool**: Vite
-
-### Database Schema
-- **users**: Authentication and profiles
-- **farms**: Farm details and settings
-- **farmMembers**: User-farm relationships with roles
-- **fields**: Crop tracking and field management
-- **cropPlans**: 4-year rotation planning
-- **animals**: Livestock inventory
-- **equipment**: Machinery and tools registry
-- **finances**: Income/expense ledger
-- **joinCodes**: Time-limited farm invitations
-
-### DevOps
-- **CI/CD**: GitHub Actions
-- **Hosting**: Azure App Service (Linux)
-- **Database**: Azure PostgreSQL Flexible Server
-- **Secrets**: Azure Key Vault
-- **Monitoring**: Application Insights
-- **Logs**: Azure Monitor
-
----
-
-## 📖 Documentation
-
-### API Endpoints
-
-#### Authentication
-```http
-POST /api/auth/register
-POST /api/auth/login
-```
-
-#### Farms
-```http
-GET    /api/farms                    # List user's farms
-POST   /api/farms                    # Create new farm
-GET    /api/farms/:farmId            # Get farm details
-PATCH  /api/farms/:farmId            # Update farm
-DELETE /api/farms/:farmId            # Delete farm
-POST   /api/farms/:farmId/join       # Join with code
-POST   /api/farms/:farmId/codes      # Generate join code (owner)
-GET    /api/farms/:farmId/codes      # List active codes (owner)
-GET    /api/farms/:farmId/members    # List members
-PATCH  /api/farms/:farmId/members/:id # Change role (owner)
-DELETE /api/farms/:farmId/members/:id # Remove member (owner)
-```
-
-#### Fields
-```http
-GET    /api/farms/:farmId/fields     # List fields
-POST   /api/farms/:farmId/fields     # Create field
-PATCH  /api/fields/:farmId/:id       # Update field
-DELETE /api/fields/:farmId/:id       # Delete field
-```
-
-#### Animals
-```http
-GET    /api/farms/:farmId/animals    # List animals
-POST   /api/farms/:farmId/animals    # Add animals
-PATCH  /api/animals/:farmId/:id      # Update animals
-DELETE /api/animals/:farmId/:id      # Remove animals
-```
-
-#### Equipment
-```http
-GET    /api/farms/:farmId/equipment  # List equipment
-POST   /api/farms/:farmId/equipment  # Add equipment
-PATCH  /api/equipment/:farmId/:id    # Update equipment
-DELETE /api/equipment/:farmId/:id    # Remove equipment
-POST   /api/equipment/:id/sell       # Mark as sold
-```
-
-#### Finances
-```http
-GET    /api/farms/:farmId/finances   # List transactions + balance
-POST   /api/farms/:farmId/finances   # Record transaction
-DELETE /api/finances/:farmId/:id     # Delete transaction
-```
-
-**Authentication**: All endpoints except `/api/auth/*` require:
-```http
-Authorization: Bearer <jwt-token>
-```
-
-### Farm Roles
-
-| Role | Permissions |
-|------|-------------|
-| **Owner** | Full access, can delete farm, manage members, create join codes |
-| **Editor** | Can create, edit, delete all farm data (fields, animals, equipment, finances) |
-| **Viewer** | Read-only access to all farm data |
-
----
-
-## 🎨 Design System
-
-### Color Palette
-
-```css
-:root {
-  --colour-primary: 142 56% 25%;      /* Forest Green #2d6039 */
-  --colour-secondary: 38 92% 52%;     /* Golden Yellow #f5ad1a */
-  --colour-accent: 38 92% 60%;        /* Light Gold */
-  --colour-surface: 49 63% 96%;       /* Cream #fbf9ef */
-  --colour-surface-dark: 150 15% 96%; /* Light Grey */
-  --colour-text: 150 15% 10%;         /* Dark Green-Grey */
-  --colour-text-light: 150 10% 40%;   /* Medium Grey */
-  --colour-danger: 0 65% 50%;         /* Red */
-  --colour-success: 142 56% 35%;      /* Green */
-}
-```
-
-### Typography
-- **Headings**: Inter font family
-- **Body**: System UI fonts
-- **Monospace**: For data/numbers
-
-### Components
-All UI components use Tailwind CSS with custom design tokens. Colors automatically adapt when CSS variables are changed.
-
----
-
-## 🧪 Testing
-
-### Run Tests
-
-```bash
-# All tests
-npm test
-
-# Watch mode
-npm run test:watch
-
-# Coverage report
-npm run test:coverage
-```
-
-### Test Suites
-
-- **API Tests**: Authentication, CRUD operations, permissions
-- **Database Tests**: Schema validation, data integrity, migrations
-- **Component Tests**: Vue components with user interactions
-- **Integration Tests**: End-to-end workflows
-
-**Coverage Target**: >80% for critical paths
-
----
-
-## 🏗️ Project Structure
-
-```
-FS25-FMS/
-├── server/                     # Backend (Node.js + Express)
-│   ├── database.ts            # Database initialization & migrations
-│   ├── db-adapter.ts          # Dual database adapter (PostgreSQL/SQLite)
-│   ├── index.ts               # Express server entry
-│   ├── seed.ts                # Demo data seeding
-│   ├── middleware/
-│   │   ├── auth.ts            # JWT authentication
-│   │   └── farmAccess.ts      # Role-based access control
-│   └── routes/
-│       ├── auth.ts            # Registration & login
-│       ├── farms.ts           # Farm management
-│       ├── fields.ts          # Field tracking
-│       ├── animals.ts         # Livestock management
-│       ├── equipment.ts       # Machinery registry
-│       └── finances.ts        # Financial ledger
-│
-├── src/                        # Frontend (Vue 3 + TypeScript)
-│   ├── assets/
-│   │   └── design.css         # Design system CSS variables
-│   ├── components/
-│   │   ├── CropRotationPlanner.vue
-│   │   └── FieldCard.vue
-│   ├── stores/                # Pinia state management
-│   │   ├── auth.ts            # Auth state
-│   │   └── farm.ts            # Farm state
-│   ├── views/                 # Page components
-│   │   ├── Dashboard.vue
-│   │   ├── Fields.vue
-│   │   ├── Equipment.vue
-│   │   ├── Money.vue
-│   │   └── FarmSettings.vue
-│   ├── router/
-│   │   └── index.ts           # Vue Router configuration
-│   ├── utils/
-│   │   └── api.ts             # HTTP client
-│   └── main.ts                # Vue app entry
-│
-├── tests/                      # Test suites
-│   ├── api/                   # API endpoint tests
-│   ├── db/                    # Database tests
-│   └── components/            # Component tests
-│
-├── .github/
-│   └── workflows/
-│       └── azure-deploy.yml   # CI/CD pipeline
-│
-├── infrastructure/             # Azure deployment scripts
-│   ├── deploy.ps1             # Main deployment script
-│   ├── setup-postgres.ps1     # PostgreSQL provisioning
-│   └── setup-keyvault.ps1     # Key Vault configuration
-│
-├── dist/                       # Production build output
-│   ├── index.html             # Frontend entry
-│   ├── assets/                # Compiled CSS/JS
-│   └── server/                # Compiled TypeScript backend
-│
-├── package.json                # Dependencies & scripts
-├── vite.config.ts             # Frontend build config
-├── tsconfig.json              # TypeScript config (frontend)
-├── tsconfig.server.json       # TypeScript config (backend)
-└── tailwind.config.js         # Tailwind CSS config
-```
-
----
-
-## 💻 Development
-
-### Available Scripts
-
-```bash
-npm run dev              # Start dev server (http://localhost:3000)
-npm run build            # Build for production
-npm start                # Run production build
-npm test                 # Run all tests
-npm run test:watch       # Run tests in watch mode
-npm run lint             # Lint code (if configured)
-```
-
-### Local Development with PostgreSQL
-
-```bash
-# Install PostgreSQL locally
-winget install PostgreSQL.PostgreSQL
-
-# Create database
-createdb farmmanager
-
-# Set environment
-$env:DATABASE_URL="postgresql://localhost/farmmanager"
-$env:DB_TYPE="postgres"
-
-# Run migrations
-npm run dev
-```
-
----
-
-## 🔒 Security
-
-### Authentication
-- Passwords hashed with bcrypt (10 rounds)
-- JWT tokens with 7-day expiry
-- HTTP-only cookies (optional)
-### Authorization
-- Role-based access control (RBAC)
-- Farm-level permissions (Owner/Editor/Viewer)
-- Middleware validation on all protected routes
-
-### PostgreSQL Best Practices
-- All camelCase identifiers quoted to preserve case
-- Connection pooling for performance
-- Prepared statements to prevent SQL injection
-- SSL/TLS in production (Azure managed)
-
-### Azure Security
-- Key Vault for secrets management
-- Managed Identity for service-to-service auth
-- Network security groups and firewall rules
-- HTTPS enforced on App Service
-
----
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**PostgreSQL Case Sensitivity**
-```sql
--- ❌ Wrong: Unquoted identifiers
-SELECT farmId FROM farmMembers
-
--- ✅ Correct: Quoted camelCase identifiers  
-SELECT "farmId" FROM "farmMembers"
-```
-
-**Database Connection**
-```bash
-# Test PostgreSQL connection
-psql $DATABASE_URL
-
-# Check if database exists
-az postgres flexible-server db list --resource-group <rg> --server-name <server>
-```
-
-**Azure App Service Logs**
-```bash
-# Stream logs in real-time
-az webapp log tail --name <app-name> --resource-group <rg>
-
-# Download logs
-az webapp log download --name <app-name> --resource-group <rg>
-```
-
-**Build Failures**
-```bash
-# Clear cache and rebuild
-rm -rf node_modules dist
-npm install
-npm run build
-```
-
----
-
-## 🚀 Deployment Checklist
-
-- [ ] Azure CLI installed and logged in
-- [ ] GitHub repository created
-- [ ] Secrets configured in Key Vault
-- [ ] PostgreSQL firewall rules set
-- [ ] Environment variables set in App Service
-- [ ] GitHub Actions workflow configured
-- [ ] CORS origins configured
-- [ ] SSL certificate enabled
-- [ ] Application Insights monitoring active
-- [ ] Database backups configured
-
----
-
-## 📊 Performance
-
-### Optimization
-
-- **Frontend**: Vite code splitting, tree shaking, minification
-- **Backend**: Connection pooling, query optimization
-- **Database**: Indexed foreign keys, efficient JOINs
-- **Caching**: Browser caching for static assets
-- **CDN**: Azure CDN (optional for global distribution)
-
-### Monitoring
-
-Track performance in Application Insights:
-- Request duration
-- Dependency calls (database queries)
-- Error rates and exceptions
-- User sessions and page views
-
----
-
-## 🤝 Contributing
-
-### Development Workflow
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes
-4. Run tests: `npm test`
-5. Commit: `git commit -m 'Add amazing feature'`
-6. Push: `git push origin feature/amazing-feature`
-7. Open a Pull Request
-
-### Code Style
-
-- **TypeScript**: Strict mode enabled
-- **Vue**: Composition API with `<script setup>`
-- **Formatting**: Prettier (if configured)
-- **Linting**: ESLint rules
-- **Commits**: Conventional Commits format
-
----
-
-## 📝 License
-
-This project is provided as-is for personal use. See [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- Farming Simulator 25 community
-- Vue.js and Vite teams
-- Azure developer tools
-- British farming best practices resources
-
----
-
-## 📞 Support
-
-**Issues**: [GitHub Issues](../../issues)
-
-**Questions**: Open a discussion in the repository
-
-**Updates**: Watch the repository for new releases
-
----
-
-<div align="center">
-
-### 🚜 Happy Farming! 🌾
-
-**Built with ❤️ for the Farming Simulator community**
 
 [⬆ Back to Top](#-fs25-farm-management-system)
 
