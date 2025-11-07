@@ -20,8 +20,7 @@
 
 ## ✨ Features
 
-```text
-FS25-Farm-Managment-System/
+### **FS25 Farm Managment System**
 
 - Track crop growth stages, fertiliser application, and weed states
 - Visual field cards with status indicators
@@ -104,8 +103,7 @@ FS25-Farm-Managment-System/
 │   ├── views/             # Page components
 │   ├── stores/            # Pinia state management
 │   └── router/            # Vue Router config
-├── tests/                  # Test suites
-└── infrastructure/         # Azure deployment (Bicep)
+└── tests/                  # Test suites
 ```
 
 ### Available Scripts
