@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fs25-farm-manager:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # PostgreSQL connection (optional) - set these to use Postgres instead of SQLite
+      - DB_HOST=${DB_HOST:-}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USER=${DB_USER:-}
+      - DB_PASSWORD=${DB_PASSWORD:-}
+      - DB_NAME=${DB_NAME:-}
+    volumes:
+      # Persist SQLite data directory when using the default SQLite adapter
+      - ./data:/app/data
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: farm
+      POSTGRES_PASSWORD: farm_pass
+      POSTGRES_DB: farm_manager
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  db-data:
+    name: fs25_pgdata

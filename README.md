@@ -88,6 +88,46 @@ npm run dev
 
 ---
 
+### Docker (Docker Compose)
+
+You can build and run the whole application with Docker Compose. By default the app uses the bundled SQLite database (persisted to `./data`), but you can switch to the included PostgreSQL service by setting the appropriate env vars.
+
+PowerShell (from project root):
+
+```powershell
+# Build images (uses Dockerfile in repo root)
+docker compose build
+
+# Start services (foreground)
+docker compose up
+
+# Start services detached
+docker compose up -d
+
+# Stop and remove containers
+docker compose down
+```
+
+Notes:
+
+- The server will be available at: http://localhost:3000
+- If you want to use the bundled Postgres service, copy `.env.sample` to `.env` and set:
+
+```text
+DB_HOST=db
+DB_USER=farm
+DB_PASSWORD=farm_pass
+DB_NAME=farm_manager
+```
+
+- By default the app uses SQLite (no extra config). The SQLite DB file is stored in `./data` on the host (this folder is mounted into the container by the Compose file).
+- To follow logs for the `app` service:
+
+```powershell
+docker compose logs -f app
+```
+
+
 ## 💻 Development Setup
 
 ### Project Structure
