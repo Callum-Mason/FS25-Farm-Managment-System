@@ -67,7 +67,10 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       currentDay = 1,
       currency = 'GBP',
       areaUnit = 'hectares',
-      daysPerMonth = 28
+      daysPerMonth = 28,
+      fields = [],
+      vehicles = [],
+      equipment = []
     } = req.body
 
     if (!name || !mapName) {
@@ -84,8 +87,8 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
     if (currentDay < 1 || currentDay > daysPerMonth) {
       return res.status(400).json({ error: `Day must be between 1 and ${daysPerMonth}` })
     }
-    if (![28, 30, 31].includes(daysPerMonth)) {
-      return res.status(400).json({ error: 'Days per month must be 28, 30, or 31' })
+    if (daysPerMonth < 1 || daysPerMonth > 31) {
+      return res.status(400).json({ error: 'Days per month must be between 1 and 31' })
     }
     if (!['GBP', 'USD', 'EUR', 'CAD', 'AUD', 'DKK', 'NOK', 'SEK', 'CHF'].includes(currency)) {
       return res.status(400).json({ error: 'Invalid currency' })
@@ -178,6 +181,165 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
             req.userId
           ]
         )
+      }
+    }
+
+    // Create initial fields if provided
+    if (fields && fields.length > 0) {
+      for (let i = 0; i < fields.length; i++) {
+        const field = fields[i]
+        // Convert size from formData structure to sizeHectares
+        const sizeHectares = areaUnit === 'acres' 
+          ? Number(field.size) * 0.404686  // Convert acres to hectares
+          : Number(field.size)
+        
+        await db.run(
+          prepareSql(`
+            INSERT INTO fields ("farmId", "fieldNumber", name, "sizeHectares", "currentCrop")
+            VALUES (?, ?, ?, ?, ?)
+          `, usePostgres),
+          [
+            farmId,
+            i + 1, // Field number
+            field.name,
+            sizeHectares,
+            field.crop || null
+          ]
+        )
+      }
+    }
+
+    // Create initial vehicles if provided
+    if (vehicles && vehicles.length > 0) {
+      for (const vehicle of vehicles) {
+        await db.run(
+          prepareSql(`
+            INSERT INTO equipment ("farmId", model, category, brand, owned, leased, "dailyCost", condition, "purchasePrice", "purchaseDate", notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `, usePostgres),
+          [
+            farmId,
+            vehicle.model,
+            vehicle.category,
+            vehicle.brand,
+            vehicle.owned ? 1 : 0,
+            vehicle.leased ? 1 : 0,
+            vehicle.dailyCost || 0,
+            vehicle.condition || 100,
+            vehicle.purchasePrice || 0,
+            vehicle.purchaseDate || null,
+            vehicle.notes || null
+          ]
+        )
+
+        // Add purchase expense if vehicle is owned and has purchase price
+        if (vehicle.owned && vehicle.purchasePrice > 0) {
+          if (usePostgres) {
+            await db.run(
+              prepareSql(`
+                INSERT INTO finances ("farmId", date, "gameYear", "gameMonth", "gameDay", type, category, description, amount, "createdByUserId")
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              `, usePostgres),
+              [
+                farmId,
+                new Date().toISOString().slice(0, 10),
+                currentYear,
+                currentMonth,
+                currentDay,
+                'expense',
+                'Equipment Purchase',
+                `${vehicle.brand} ${vehicle.model} - ${vehicle.category}`,
+                -Math.abs(vehicle.purchasePrice),
+                req.userId
+              ]
+            )
+          } else {
+            await db.run(
+              prepareSql(`
+                INSERT INTO finances ("farmId", "gameYear", "gameMonth", "gameDay", type, category, description, amount, "createdByUserId")
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+              `, usePostgres),
+              [
+                farmId,
+                currentYear,
+                currentMonth,
+                currentDay,
+                'expense',
+                'Equipment Purchase',
+                `${vehicle.brand} ${vehicle.model} - ${vehicle.category}`,
+                -Math.abs(vehicle.purchasePrice),
+                req.userId
+              ]
+            )
+          }
+        }
+      }
+    }
+
+    // Create initial equipment if provided
+    if (equipment && equipment.length > 0) {
+      for (const item of equipment) {
+        await db.run(
+          prepareSql(`
+            INSERT INTO equipment ("farmId", model, category, brand, owned, leased, "dailyCost", condition, "purchasePrice", "purchaseDate", notes)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `, usePostgres),
+          [
+            farmId,
+            item.model,
+            item.category,
+            item.brand,
+            item.owned ? 1 : 0,
+            item.leased ? 1 : 0,
+            item.dailyCost || 0,
+            item.condition || 100,
+            item.purchasePrice || 0,
+            item.purchaseDate || null,
+            item.notes || null
+          ]
+        )
+
+        // Add purchase expense if equipment is owned and has purchase price
+        if (item.owned && item.purchasePrice > 0) {
+          if (usePostgres) {
+            await db.run(
+              prepareSql(`
+                INSERT INTO finances ("farmId", date, "gameYear", "gameMonth", "gameDay", type, category, description, amount, "createdByUserId")
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              `, usePostgres),
+              [
+                farmId,
+                new Date().toISOString().slice(0, 10),
+                currentYear,
+                currentMonth,
+                currentDay,
+                'expense',
+                'Equipment Purchase',
+                `${item.brand} ${item.model} - ${item.category}`,
+                -Math.abs(item.purchasePrice),
+                req.userId
+              ]
+            )
+          } else {
+            await db.run(
+              prepareSql(`
+                INSERT INTO finances ("farmId", "gameYear", "gameMonth", "gameDay", type, category, description, amount, "createdByUserId")
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+              `, usePostgres),
+              [
+                farmId,
+                currentYear,
+                currentMonth,
+                currentDay,
+                'expense',
+                'Equipment Purchase',
+                `${item.brand} ${item.model} - ${item.category}`,
+                -Math.abs(item.purchasePrice),
+                req.userId
+              ]
+            )
+          }
+        }
       }
     }
 

@@ -113,6 +113,44 @@ export const useFarmStore = defineStore('farm', () => {
     return farm
   }
 
+  async function createFarmWithEquipment(
+    name: string, 
+    mapName: string, 
+    startingFunds?: number,
+    currentYear?: number,
+    currentMonth?: number,
+    currentDay?: number,
+    currency?: string,
+    areaUnit?: string,
+    daysPerMonth?: number,
+    fields?: Array<{ name: string; size: number; crop: string }>,
+    vehicles?: Array<{ brand: string; model: string; category: string; owned: boolean; leased: boolean; dailyCost: number; condition: number; purchasePrice: number; purchaseDate: string; notes: string }>,
+    equipment?: Array<{ brand: string; model: string; category: string; owned: boolean; leased: boolean; dailyCost: number; condition: number; purchasePrice: number; purchaseDate: string; notes: string }>
+  ) {
+    const farm = await api.post('/farms', { 
+      name, 
+      mapName, 
+      startingFunds,
+      currentYear,
+      currentMonth,
+      currentDay,
+      currency,
+      areaUnit,
+      daysPerMonth,
+      fields,
+      vehicles,
+      equipment
+    })
+    farms.value.push(farm)
+    currentFarmId.value = farm.id
+    try {
+      if (!sessionStorage.getItem('suppressAutoSet')) {
+        localStorage.setItem('currentFarmId', String(currentFarmId.value))
+      }
+    } catch (e) {}
+    return farm
+  }
+
   async function updateFarm(farmId: number, updates: Partial<Pick<Farm, 'name' | 'mapName' | 'currency' | 'daysPerMonth' | 'areaUnit'>>) {
     const farm = await api.patch(`/farms/${farmId}`, updates)
     const index = farms.value.findIndex(f => f.id === farmId)
@@ -223,6 +261,7 @@ export const useFarmStore = defineStore('farm', () => {
     currentUserRole,
     fetchFarms,
     createFarm,
+    createFarmWithEquipment,
     updateFarm,
     deleteFarm,
     advanceDate,
