@@ -17,12 +17,12 @@
   --secondary-20: hsl(var(--colour-secondary) / 0.20);
 }
 
-/* Dark Mode Colors */
+/* Dark Mode Colors - Modern & Less Dark */
 .dark {
-  --colour-primary: 142 56% 45%;
-  --colour-secondary: 38 92% 62%;
-  --colour-surface: 150 15% 8%;
-  --colour-text: 49 63% 96%;
+  --colour-primary: 142 56% 55%;
+  --colour-secondary: 38 92% 65%;
+  --colour-surface: 220 13% 18%;
+  --colour-text: 210 20% 90%;
   
   /* Adjusted accents for dark mode */
   --primary-5: hsl(var(--colour-primary) / 0.08);
@@ -47,18 +47,18 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Dark Mode Input Styles */
+/* Dark Mode Input Styles - Modern Appearance */
 .dark input,
 .dark select,
 .dark textarea {
-  background-color: rgb(31 41 55);
-  color: rgb(243 244 246);
-  border-color: rgb(75 85 99);
+  background-color: hsl(220 13% 22%);
+  color: hsl(var(--colour-text));
+  border-color: hsl(220 13% 30%);
 }
 
 .dark input::placeholder,
 .dark textarea::placeholder {
-  color: rgb(156 163 175);
+  color: hsl(var(--colour-text) / 0.5);
 }
 
 .dark input:focus,
@@ -66,4 +66,32 @@ body {
 .dark textarea:focus {
   border-color: hsl(var(--colour-primary));
   --tw-ring-color: hsl(var(--colour-primary));
+  background-color: hsl(220 13% 25%);
+}
+
+/* Dark Mode Select Options */
+.dark select option,
+.dark select optgroup {
+  background-color: hsl(220 13% 22%);
+  color: hsl(var(--colour-text));
+}
+
+/* Modern Dark Mode Cards & Borders */
+.dark {
+  /* Additional surface colors for layered UI */
+  --surface-elevated: 220 13% 22%;
+  --surface-hover: 220 13% 25%;
+  --border-subtle: 220 13% 30%;
+}
+
+/* Enhanced card styling for dark mode */
+.dark .bg-surface {
+  background-color: hsl(220 13% 20%);
+  border: 1px solid hsl(220 13% 28%);
+}
+
+/* Subtle elevation for recommendation cards */
+.dark .bg-surface:hover {
+  background-color: hsl(220 13% 22%);
+  transition: background-color 0.2s ease;
 }

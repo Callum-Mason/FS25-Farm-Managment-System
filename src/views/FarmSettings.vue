@@ -179,7 +179,7 @@
               :class="[
                 'aspect-square rounded-lg transition-all',
                 dayNum === 0 ? 'invisible' : '',
-                dayNum === dateJumpForm.day && !isJumping ? 'bg-primary text-white font-bold shadow-lg scale-110' : 'bg-gray-100 dark:bg-gray-700 hover:bg-primary/20 dark:hover:bg-primary/30',
+                dayNum === dateJumpForm.day && !isJumping ? 'bg-primary text-white font-bold shadow-lg scale-110' : 'bg-surface/50 dark:bg-surface hover:bg-primary/20 dark:hover:bg-primary/30 text-text',
                 dayNum === farmStore.currentFarm?.currentDay && dateJumpForm.month === farmStore.currentFarm?.currentMonth && dateJumpForm.year === farmStore.currentFarm?.currentYear ? 'ring-2 ring-secondary' : ''
               ]"
             >
@@ -282,8 +282,8 @@
         >
           <div class="flex-1">
             <p class="font-medium text-text">{{ member.name }}</p>
-            <p class="text-sm text-text/60">{{ member.email }}</p>
-            <p class="text-xs text-text/40 mt-1">Joined {{ formatDate(member.joinedAt) }}</p>
+            <p class="text-sm text-text/70">{{ member.email }}</p>
+            <p class="text-xs text-text/60 mt-1">Joined {{ formatDate(member.joinedAt) }}</p>
           </div>
 
           <div class="flex items-center gap-3">
@@ -304,7 +304,7 @@
             <button
               v-if="isOwner && member.userId !== authStore.user?.id"
               @click="handleRemoveMember(member.id)"
-              class="px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm"
+              class="px-3 py-1 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition text-sm"
             >
               Remove
             </button>
@@ -333,11 +333,11 @@
       </div>
 
       <div v-else-if="joinCodes.length === 0" class="text-center py-8 bg-surface rounded-lg">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-text/20 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-text/40 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
         </svg>
-        <p class="text-text/60 font-medium mb-1">No Active Join Codes</p>
-        <p class="text-text/40 text-sm">Generate a code above to invite members to your farm</p>
+        <p class="text-text/70 font-medium mb-1">No Active Join Codes</p>
+        <p class="text-text/60 text-sm">Generate a code above to invite members to your farm</p>
       </div>
 
       <div v-else class="space-y-3">
@@ -373,20 +373,20 @@
     </div>
 
     <!-- Danger Zone (Owner only) -->
-    <div v-if="isOwner" class="bg-red-50 border-2 border-red-200 rounded-card p-6">
-      <h3 class="text-xl font-bold text-red-700 mb-4">Danger Zone</h3>
+    <div v-if="isOwner" class="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800/50 rounded-card p-6">
+      <h3 class="text-xl font-bold text-red-700 dark:text-red-400 mb-4">Danger Zone</h3>
       
       <div class="space-y-4">
         <div class="flex items-start justify-between">
           <div>
-            <p class="font-medium text-red-800">Delete This Farm</p>
-            <p class="text-sm text-red-600 mt-1">
+            <p class="font-medium text-red-800 dark:text-red-300">Delete This Farm</p>
+            <p class="text-sm text-red-600 dark:text-red-400 mt-1">
               Once you delete a farm, there is no going back. All data including fields, animals, equipment, and finances will be permanently deleted.
             </p>
           </div>
           <button
             @click="confirmDeleteFarm"
-            class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium whitespace-nowrap ml-4"
+            class="px-6 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition font-medium whitespace-nowrap ml-4"
           >
             Delete Farm
           </button>

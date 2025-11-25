@@ -1,10 +1,10 @@
 <template>
   <div class="space-y-6">
     <div>
-      <label class="block text-sm font-medium mb-2">What is currently planted?</label>
+      <label class="block text-sm font-medium mb-2 text-text">What is currently planted?</label>
       <select
         v-model="currentCrop"
-        class="w-full px-4 py-3 border-2 border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+        class="w-full px-4 py-3 border-2 border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface text-text"
       >
         <option value="">Select a crop</option>
         <optgroup label="Cereals">
@@ -51,22 +51,22 @@
     <button
       @click="getSuggestion"
       :disabled="!currentCrop"
-      class="w-full bg-secondary text-white py-3 rounded-lg font-medium hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+      class="w-full bg-secondary text-white dark:text-surface py-3 rounded-lg font-medium hover:bg-secondary/90 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
     >
       What should I plant next?
     </button>
 
-    <div v-if="suggestion" class="bg-primary/5 border-2 border-primary/20 rounded-lg p-6 space-y-4">
+    <div v-if="suggestion" class="bg-primary/5 dark:bg-primary/10 border-2 border-primary/20 dark:border-primary/30 rounded-lg p-6 space-y-4 backdrop-blur-sm">
       <div>
         <h3 class="text-lg font-bold text-primary mb-2">🌱 Best Recommendations</h3>
         <div class="space-y-2">
           <div
             v-for="(rec, index) in suggestion.recommendations"
             :key="index"
-            class="p-3 bg-white rounded-lg border border-primary/10"
+            class="p-4 bg-surface rounded-lg border border-primary/10 hover:border-primary/20 transition-all duration-200 hover:shadow-sm dark:hover:bg-surface/80"
           >
             <p class="font-semibold text-text">{{ rec.crop }}</p>
-            <p class="text-sm text-text/70 mt-1">{{ rec.reason }}</p>
+            <p class="text-sm text-text/80 mt-1">{{ rec.reason }}</p>
           </div>
         </div>
       </div>
@@ -81,7 +81,7 @@
       </div>
 
       <div v-if="suggestion.avoid.length > 0" class="border-t border-primary/10 pt-4">
-        <h4 class="font-semibold text-red-600 mb-2">⚠️ Avoid:</h4>
+        <h4 class="font-semibold text-red-500 dark:text-red-400 mb-2">⚠️ Avoid:</h4>
         <ul class="space-y-1">
           <li v-for="(avoid, index) in suggestion.avoid" :key="index" class="text-sm text-text/80">
             • {{ avoid }}
@@ -90,8 +90,8 @@
       </div>
     </div>
 
-    <div class="bg-surface/50 rounded-lg p-4 border border-primary/10">
-      <h4 class="font-semibold text-primary mb-2">About Crop Rotation</h4>
+    <div class="bg-surface/50 dark:bg-surface/30 rounded-lg p-4 border border-primary/10 dark:border-primary/20">
+      <h4 class="font-semibold text-primary mb-2">💡 About Crop Rotation</h4>
       <p class="text-sm text-text/80">
         Proper crop rotation helps maintain soil fertility, reduce pests and diseases, improve soil structure, 
         and can increase yields by 10-25%. Different crop families use nutrients differently and affect soil health uniquely.

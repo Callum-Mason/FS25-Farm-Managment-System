@@ -29,7 +29,7 @@
             <div class="flex items-center gap-3 flex-wrap">
               <h3 class="text-xl font-bold text-primary">{{ item.brand }} {{ item.model }}</h3>
               <span class="px-2 py-1 text-sm rounded bg-secondary/10 text-secondary">{{ item.category }}</span>
-              <span v-if="item.sold" class="px-2 py-1 text-sm rounded bg-red-100 text-red-700 font-medium">
+              <span v-if="item.sold" class="px-2 py-1 text-sm rounded bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-medium">
                 ❌ SOLD
               </span>
               <span v-else-if="item.ownerName" class="px-2 py-1 text-sm rounded bg-primary/10 text-primary" title="Assigned to">
@@ -92,12 +92,12 @@
 
     <!-- Add Equipment Modal -->
     <div v-if="showAddModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white dark:bg-gray-800 rounded-card p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border-2 border-gray-200 dark:border-gray-700">
+      <div class="bg-white dark:bg-surface rounded-card p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border-2 border-primary/20 dark:border-primary/30">
         <h3 class="text-2xl font-bold text-primary mb-6">Add Equipment</h3>
         <form @submit.prevent="handleAdd" class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium mb-2">Brand *</label>
+              <label class="block text-sm font-medium mb-2 text-text">Brand *</label>
               <input
                 v-model="newEquipment.brand"
                 @input="updateBrandSuggestions"
@@ -112,7 +112,7 @@
               </datalist>
             </div>
             <div>
-              <label class="block text-sm font-medium mb-2">Model *</label>
+              <label class="block text-sm font-medium mb-2 text-text">Model *</label>
               <input
                 v-model="newEquipment.model"
                 type="text"
@@ -124,7 +124,7 @@
           </div>
           
           <div>
-            <label class="block text-sm font-medium mb-2">Category *</label>
+            <label class="block text-sm font-medium mb-2 text-text">Category *</label>
             <select
               v-model="newEquipment.category"
               required
@@ -145,7 +145,7 @@
           </div>
 
           <div v-if="newEquipment.category === 'Tractor'" class="bg-primary/5 border-2 border-primary/20 p-4 rounded-lg">
-            <label class="block text-sm font-medium mb-2">👤 Assign Tractor To (Optional)</label>
+            <label class="block text-sm font-medium mb-2 text-text">👤 Assign Tractor To (Optional)</label>
             <select
               v-model="newEquipment.userId"
               class="w-full px-4 py-2 border border-primary/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
@@ -182,7 +182,7 @@
           </div>
 
           <div v-if="newEquipment.leased">
-            <label class="block text-sm font-medium mb-2">Daily Lease Cost (£)</label>
+            <label class="block text-sm font-medium mb-2 text-text">Daily Lease Cost (£)</label>
             <input
               v-model.number="newEquipment.dailyCost"
               type="number"
@@ -193,7 +193,7 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-2">Condition: {{ newEquipment.condition }}%</label>
+            <label class="block text-sm font-medium mb-2 text-text">Condition: {{ newEquipment.condition }}%</label>
             <input
               v-model.number="newEquipment.condition"
               type="range"

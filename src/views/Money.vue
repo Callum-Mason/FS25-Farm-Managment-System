@@ -3,7 +3,7 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
       <div>
         <h2 class="text-2xl lg:text-3xl font-bold text-primary">Money Tracker</h2>
-        <p class="text-xl lg:text-2xl font-bold mt-2" :class="balance >= 0 ? 'text-green-600' : 'text-red-600'">
+        <p class="text-xl lg:text-2xl font-bold mt-2" :class="balance >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
           Balance: £{{ balance.toLocaleString('en-GB', { minimumFractionDigits: 2 }) }}
         </p>
       </div>
@@ -38,14 +38,14 @@
                 <td class="px-4 py-3">
                   <span
                     class="px-2 py-1 rounded text-sm whitespace-nowrap"
-                    :class="entry.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                    :class="entry.type === 'income' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'"
                   >
                     {{ entry.type }}
                   </span>
                 </td>
                 <td class="px-4 py-3">{{ entry.category }}</td>
                 <td class="px-4 py-3">{{ entry.description }}</td>
-                <td class="px-4 py-3 text-right font-medium whitespace-nowrap" :class="entry.type === 'income' ? 'text-green-600' : 'text-red-600'">
+                <td class="px-4 py-3 text-right font-medium whitespace-nowrap" :class="entry.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
                   {{ entry.type === 'income' ? '+' : '-' }}£{{ entry.amount.toLocaleString('en-GB', { minimumFractionDigits: 2 }) }}
                 </td>
               </tr>
@@ -62,19 +62,19 @@
           class="bg-white dark:bg-gray-800 rounded-lg p-4 border-2 border-gray-200 dark:border-gray-700"
         >
           <div class="flex justify-between items-start mb-2">
-            <span class="text-xs text-text/60">{{ formatShortGameDate(entry.gameYear, entry.gameMonth, entry.gameDay) }}</span>
+            <span class="text-xs text-text/70">{{ formatShortGameDate(entry.gameYear, entry.gameMonth, entry.gameDay) }}</span>
             <span
               class="px-2 py-1 rounded text-xs"
-              :class="entry.type === 'income' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'"
+              :class="entry.type === 'income' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'"
             >
               {{ entry.type }}
             </span>
           </div>
           <div class="mb-2">
-            <div class="text-sm font-medium text-text/70">{{ entry.category }}</div>
+            <div class="text-sm font-medium text-text/80">{{ entry.category }}</div>
             <div class="text-sm text-text">{{ entry.description }}</div>
           </div>
-          <div class="text-lg font-bold text-right" :class="entry.type === 'income' ? 'text-green-600' : 'text-red-600'">
+          <div class="text-lg font-bold text-right" :class="entry.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
             {{ entry.type === 'income' ? '+' : '-' }}£{{ entry.amount.toLocaleString('en-GB', { minimumFractionDigits: 2 }) }}
           </div>
         </div>
@@ -83,13 +83,13 @@
 
     <!-- Add Entry Modal -->
     <div v-if="showAddModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white dark:bg-gray-800 rounded-card p-8 max-w-2xl w-full border-2 border-gray-200 dark:border-gray-700">
+      <div class="bg-white dark:bg-surface rounded-card p-8 max-w-2xl w-full border-2 border-primary/20 dark:border-primary/30">
         <h3 class="text-2xl font-bold text-primary mb-6">Add Finance Entry</h3>
         <p class="text-sm text-text/60 mb-4">Entry will be added on: <strong>{{ currentGameDate }}</strong></p>
         <form @submit.prevent="handleAdd" class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium mb-2">Type</label>
+              <label class="block text-sm font-medium mb-2 text-text">Type</label>
               <select
                 v-model="newEntry.type"
                 required
@@ -102,7 +102,7 @@
           </div>
           
           <div>
-            <label class="block text-sm font-medium mb-2">Category</label>
+            <label class="block text-sm font-medium mb-2 text-text">Category</label>
             <input
               v-model="newEntry.category"
               type="text"
@@ -112,7 +112,7 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-2">Description</label>
+            <label class="block text-sm font-medium mb-2 text-text">Description</label>
             <input
               v-model="newEntry.description"
               type="text"
@@ -122,7 +122,7 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium mb-2">Amount (£)</label>
+            <label class="block text-sm font-medium mb-2 text-text">Amount (£)</label>
             <input
               v-model.number="newEntry.amount"
               type="number"

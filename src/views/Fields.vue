@@ -34,7 +34,7 @@
         <form @submit.prevent="handleAdd" class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium mb-2">Field Number</label>
+              <label class="block text-sm font-medium mb-2 text-text">Field Number</label>
               <input
                 v-model.number="newField.fieldNumber"
                 type="number"
@@ -43,7 +43,7 @@
               />
             </div>
             <div>
-              <label class="block text-sm font-medium mb-2">Name</label>
+              <label class="block text-sm font-medium mb-2 text-text">Name</label>
               <input
                 v-model="newField.name"
                 type="text"

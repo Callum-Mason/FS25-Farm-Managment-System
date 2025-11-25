@@ -6,7 +6,7 @@
       
       <form @submit.prevent="handleRegister" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium mb-2">Name</label>
+          <label class="block text-sm font-medium mb-2 text-text">Name</label>
           <input
             v-model="name"
             type="text"
@@ -16,7 +16,7 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium mb-2">Email</label>
+          <label class="block text-sm font-medium mb-2 text-text">Email</label>
           <input
             v-model="email"
             type="email"
@@ -26,7 +26,7 @@
         </div>
         
         <div>
-          <label class="block text-sm font-medium mb-2">Password</label>
+          <label class="block text-sm font-medium mb-2 text-text">Password</label>
           <input
             v-model="password"
             type="password"
@@ -44,7 +44,7 @@
           {{ loading ? 'Creating account...' : 'Register' }}
         </button>
         
-        <p v-if="error" class="text-red-600 text-sm">{{ error }}</p>
+        <p v-if="error" class="text-red-600 dark:text-red-400 text-sm">{{ error }}</p>
       </form>
       
       <p class="mt-6 text-center text-sm">
