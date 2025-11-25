@@ -58,10 +58,40 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
   const usePostgres = isPostgres()
   
   try {
-    const { name, mapName, startingFunds } = req.body
+    const { 
+      name, 
+      mapName, 
+      startingFunds,
+      currentYear = 1,
+      currentMonth = 1,
+      currentDay = 1,
+      currency = 'GBP',
+      areaUnit = 'hectares',
+      daysPerMonth = 28
+    } = req.body
 
     if (!name || !mapName) {
       return res.status(400).json({ error: 'Farm name and map name are required' })
+    }
+
+    // Validate the date and settings
+    if (currentYear < 1 || currentYear > 9999) {
+      return res.status(400).json({ error: 'Year must be between 1 and 9999' })
+    }
+    if (currentMonth < 1 || currentMonth > 12) {
+      return res.status(400).json({ error: 'Month must be between 1 and 12' })
+    }
+    if (currentDay < 1 || currentDay > daysPerMonth) {
+      return res.status(400).json({ error: `Day must be between 1 and ${daysPerMonth}` })
+    }
+    if (![28, 30, 31].includes(daysPerMonth)) {
+      return res.status(400).json({ error: 'Days per month must be 28, 30, or 31' })
+    }
+    if (!['GBP', 'USD', 'EUR', 'CAD', 'AUD', 'DKK', 'NOK', 'SEK', 'CHF'].includes(currency)) {
+      return res.status(400).json({ error: 'Invalid currency' })
+    }
+    if (!['hectares', 'acres'].includes(areaUnit)) {
+      return res.status(400).json({ error: 'Area unit must be hectares or acres' })
     }
 
     // Ensure the authenticated user exists (prevent FK constraint failures when token refers to missing user)
@@ -83,14 +113,20 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 
     if (usePostgres) {
       const result = await db.query<{ id: number }>(
-        prepareSql('INSERT INTO farms (name, "mapName", "createdByUserId") VALUES (?, ?, ?) RETURNING id', usePostgres),
-        [name, mapName, req.userId]
+        prepareSql(`
+          INSERT INTO farms (name, "mapName", "createdByUserId", "currentYear", "currentMonth", "currentDay", currency, "areaUnit", "daysPerMonth") 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
+        `, usePostgres),
+        [name, mapName, req.userId, currentYear, currentMonth, currentDay, currency, areaUnit, daysPerMonth]
       )
       farmId = result[0].id
     } else {
       const result = await db.run(
-        prepareSql('INSERT INTO farms (name, "mapName", "createdByUserId") VALUES (?, ?, ?)', usePostgres),
-        [name, mapName, req.userId]
+        prepareSql(`
+          INSERT INTO farms (name, "mapName", "createdByUserId", "currentYear", "currentMonth", "currentDay", currency, "areaUnit", "daysPerMonth") 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, usePostgres),
+        [name, mapName, req.userId, currentYear, currentMonth, currentDay, currency, areaUnit, daysPerMonth]
       )
       farmId = result.lastID!
     }
@@ -114,9 +150,9 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
           [
             farmId,
             new Date().toISOString().slice(0, 10), // YYYY-MM-DD
-            1, // Year 1
-            1, // Month 1 (January)
-            1, // Day 1
+            currentYear,
+            currentMonth,
+            currentDay,
             'income',
             'Starting Balance',
             'Opening balance for new farm',
@@ -132,9 +168,9 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
           `, usePostgres),
           [
             farmId,
-            1, // Year 1
-            1, // Month 1 (January)
-            1, // Day 1
+            currentYear,
+            currentMonth,
+            currentDay,
             'income',
             'Starting Balance',
             'Opening balance for new farm',

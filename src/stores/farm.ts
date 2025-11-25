@@ -81,8 +81,28 @@ export const useFarmStore = defineStore('farm', () => {
     }
   }
 
-  async function createFarm(name: string, mapName: string, startingFunds?: number) {
-    const farm = await api.post('/farms', { name, mapName, startingFunds })
+  async function createFarm(
+    name: string, 
+    mapName: string, 
+    startingFunds?: number,
+    currentYear?: number,
+    currentMonth?: number,
+    currentDay?: number,
+    currency?: string,
+    areaUnit?: string,
+    daysPerMonth?: number
+  ) {
+    const farm = await api.post('/farms', { 
+      name, 
+      mapName, 
+      startingFunds,
+      currentYear,
+      currentMonth,
+      currentDay,
+      currency,
+      areaUnit,
+      daysPerMonth
+    })
     farms.value.push(farm)
     currentFarmId.value = farm.id
     try {
