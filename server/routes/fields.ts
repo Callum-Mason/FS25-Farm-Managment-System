@@ -7,6 +7,109 @@ import { getCropRecommendations } from '../utils/cropRotation.js'
 
 const router = express.Router()
 
+// PATCH /api/farms/:farmId/fields/bulk - Bulk update multiple fields
+router.patch('/:farmId/fields/bulk', authenticateToken, verifyFarmMembership, async (req: AuthRequest, res: Response) => {
+  try {
+    console.log('PATCH /farms/:farmId/fields/bulk - Request received')
+    console.log('Request body:', req.body)
+    
+    const { farmId } = req.params
+    const { fieldIds, updates } = req.body
+    const role = req.body._userRole
+
+    if (role === 'viewer') {
+      return res.status(403).json({ error: 'Viewers cannot edit fields' })
+    }
+
+    if (!fieldIds || !Array.isArray(fieldIds) || fieldIds.length === 0) {
+      return res.status(400).json({ error: 'fieldIds array is required and must not be empty' })
+    }
+
+    if (!updates || typeof updates !== 'object') {
+      return res.status(400).json({ error: 'updates object is required' })
+    }
+
+    const db = getDbAdapter()
+    const usePostgres = isPostgres()
+    
+    // Get farm's current game date for history logging
+    const farm = await db.queryOne<{ currentYear: number; currentMonth: number; currentDay: number }>(
+      prepareSql('SELECT "currentYear", "currentMonth", "currentDay" FROM farms WHERE id = ?', usePostgres),
+      [farmId]
+    )
+    
+    if (!farm) {
+      return res.status(404).json({ error: 'Farm not found' })
+    }
+
+    const updateArray: string[] = []
+    const values: any[] = []
+    
+    if (updates.growthStage !== undefined) { updateArray.push('"growthStage" = ?'); values.push(updates.growthStage) }
+    if (updates.fertiliserState !== undefined) { updateArray.push('"fertiliserState" = ?'); values.push(updates.fertiliserState) }
+    if (updates.weedsState !== undefined) { updateArray.push('"weedsState" = ?'); values.push(updates.weedsState) }
+    if (updates.currentCrop !== undefined) { updateArray.push('"currentCrop" = ?'); values.push(updates.currentCrop) }
+    if (updates.notes !== undefined) { updateArray.push('notes = ?'); values.push(updates.notes) }
+    
+    if (usePostgres) {
+      updateArray.push('"updatedAt" = CURRENT_TIMESTAMP')
+    } else {
+      updateArray.push("updatedAt = datetime('now')")
+    }
+
+    // Create placeholder for field IDs in query
+    const placeholders = fieldIds.map(() => '?').join(',')
+    const updateValues = [...values, ...fieldIds]
+
+    // Update all fields
+    const sql = prepareSql(
+      `UPDATE fields SET ${updateArray.join(', ')} WHERE id IN (${placeholders})`,
+      usePostgres
+    )
+    await db.run(sql, updateValues)
+
+    // Log history for significant changes
+    if (updates.growthStage) {
+      const tableName = usePostgres ? 'field_history' : 'fieldHistory'
+      const fieldIdCol = usePostgres ? 'field_id' : 'fieldId'
+      const growthStageCol = usePostgres ? 'growth_stage' : 'growthStage'
+      const gameYearCol = usePostgres ? 'game_year' : 'gameYear'
+      const gameMonthCol = usePostgres ? 'game_month' : 'gameMonth'
+      const gameDayCol = usePostgres ? 'game_day' : 'gameDay'
+
+      for (const fieldId of fieldIds) {
+        const field = await db.queryOne<Field>(
+          prepareSql('SELECT * FROM fields WHERE id = ?', usePostgres),
+          [fieldId]
+        )
+        
+        if (field && field.currentCrop) {
+          const insertSql = `INSERT INTO ${tableName} (${fieldIdCol}, crop, action, ${growthStageCol}, ${gameYearCol}, ${gameMonthCol}, ${gameDayCol}) VALUES (?, ?, ?, ?, ?, ?, ?)`
+          await db.run(
+            prepareSql(insertSql, usePostgres),
+            [fieldId, field.currentCrop, updates.growthStage, updates.growthStage, farm.currentYear, farm.currentMonth, farm.currentDay]
+          )
+        }
+      }
+    }
+
+    // Fetch updated fields
+    const updatedFields = await db.query<Field>(
+      prepareSql(`SELECT * FROM fields WHERE id IN (${placeholders})`, usePostgres),
+      fieldIds
+    )
+
+    res.json({
+      success: true,
+      updatedCount: fieldIds.length,
+      fields: updatedFields
+    })
+  } catch (error) {
+    console.error('Bulk update fields error:', error)
+    res.status(500).json({ error: 'Failed to bulk update fields' })
+  }
+})
+
 // PATCH /api/fields/:id - Must come BEFORE /:farmId/fields to avoid route conflicts
 router.patch('/fields/:id', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
@@ -87,6 +190,7 @@ router.patch('/fields/:id', authenticateToken, async (req: AuthRequest, res: Res
     if (oldField && growthStage !== undefined && growthStage !== oldField.growthStage) {
       const historyActions = ['Harvested', 'Plowed', 'Cultivated', 'Seeded']
       if (historyActions.includes(growthStage)) {
+        console.log(`📋 Field history action: ${growthStage} (oldStage: ${oldField.growthStage})`)
         // Get farm's current game date
         const farm = await db.queryOne<{ currentYear: number; currentMonth: number; currentDay: number }>(
           prepareSql('SELECT "currentYear", "currentMonth", "currentDay" FROM farms WHERE id = ?', usePostgres),
@@ -107,6 +211,8 @@ router.patch('/fields/:id', authenticateToken, async (req: AuthRequest, res: Res
         // Use the new crop if provided, otherwise use the old crop
         const cropForHistory = currentCrop !== undefined ? currentCrop : oldField.currentCrop
         
+        console.log(`🌾 Crop for history: ${cropForHistory}, actualYield: ${actualYield}`)
+        
         // Only record if there's a crop (skip if both are null)
         if (cropForHistory) {
           // Add actual yield to notes when harvesting
@@ -121,8 +227,55 @@ router.patch('/fields/:id', authenticateToken, async (req: AuthRequest, res: Res
             prepareSql(insertSql, usePostgres),
             [id, cropForHistory, growthStage, growthStage, farm.currentYear, farm.currentMonth, farm.currentDay, historyNotes]
           )
+
+          // AUTO-ADD TO CROP STORAGE when harvesting with yield
+          if (growthStage === 'Harvested' && actualYield !== undefined && actualYield > 0) {
+            console.log(`🌾 AUTO-HARVEST: Attempting to add ${cropForHistory} (${actualYield}L) to storage for farm ${oldField.farmId}`)
+            try {
+              // Check if storage entry already exists for this crop on this farm
+              const existingStorage = await db.queryOne<any>(
+                prepareSql(`
+                  SELECT id, quantity_stored FROM crop_storage
+                  WHERE "farmId" = ? AND crop_name = ?
+                `, usePostgres),
+                [oldField.farmId, cropForHistory]
+              )
+
+              if (existingStorage) {
+                // Update existing storage - add to existing quantity
+                const newQuantity = existingStorage.quantity_stored + actualYield
+                console.log(`🌾 AUTO-HARVEST: Updating existing ${cropForHistory} storage from ${existingStorage.quantity_stored}L to ${newQuantity}L`)
+                await db.run(
+                  prepareSql(`
+                    UPDATE crop_storage
+                    SET quantity_stored = ?, last_updated = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                  `, usePostgres),
+                  [newQuantity, existingStorage.id]
+                )
+              } else {
+                // Create new storage entry
+                console.log(`🌾 AUTO-HARVEST: Creating NEW storage entry for ${cropForHistory} with ${actualYield}L`)
+                await db.run(
+                  prepareSql(`
+                    INSERT INTO crop_storage ("farmId", crop_name, quantity_stored, storage_location, notes, last_updated)
+                    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                  `, usePostgres),
+                  [oldField.farmId, cropForHistory, actualYield, null, `Harvested from Field ${oldField.fieldNumber}`]
+                )
+              }
+              console.log(`✅ AUTO-HARVEST: Successfully added ${cropForHistory} to storage`)
+            } catch (storageError) {
+              console.warn('❌ Warning: Failed to auto-add harvested crop to storage:', storageError)
+              // Don't fail the harvest if storage update fails - just log warning
+            }
+          } else {
+            console.log(`🌾 AUTO-HARVEST: Skipped (stage: ${growthStage}, yield: ${actualYield})`)
+          }
         }
       }
+    } else {
+      console.log(`📋 No history action: oldStage=${oldField?.growthStage}, newStage=${growthStage}`)
     }
 
     const updatedField = await db.queryOne<Field>(

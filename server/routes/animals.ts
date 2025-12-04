@@ -66,4 +66,86 @@ router.post('/:farmId/animals', authenticateToken, verifyFarmMembership, async (
   }
 })
 
+// PATCH /api/farms/:farmId/animals/:id - Update animal
+router.patch('/:farmId/animals/:id', authenticateToken, verifyFarmMembership, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params
+    const role = req.body._userRole
+
+    if (role === 'viewer') {
+      return res.status(403).json({ error: 'Viewers cannot update animals' })
+    }
+
+    const { type, count, feedPerDay, productivity, notes } = req.body
+    const db = getDbAdapter()
+    const usePostgres = isPostgres()
+
+    const updates: string[] = []
+    const values: any[] = []
+
+    if (type !== undefined) { updates.push('type = ?'); values.push(type) }
+    if (count !== undefined) { updates.push('count = ?'); values.push(count) }
+    if (feedPerDay !== undefined) { updates.push('"feedPerDay" = ?'); values.push(feedPerDay) }
+    if (productivity !== undefined) { updates.push('productivity = ?'); values.push(productivity) }
+    if (notes !== undefined) { updates.push('notes = ?'); values.push(notes) }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No updates provided' })
+    }
+
+    updates.push('"updatedAt" = CURRENT_TIMESTAMP')
+    values.push(id)
+
+    await db.run(
+      prepareSql(`UPDATE animals SET ${updates.join(', ')} WHERE id = ?`, usePostgres),
+      values
+    )
+
+    const animal = await db.queryOne<Animal>(
+      prepareSql('SELECT * FROM animals WHERE id = ?', usePostgres),
+      [id]
+    )
+
+    res.json(animal)
+  } catch (error) {
+    console.error('Update animal error:', error)
+    res.status(500).json({ error: 'Failed to update animal' })
+  }
+})
+
+// DELETE /api/farms/:farmId/animals/:id - Delete animal
+router.delete('/:farmId/animals/:id', authenticateToken, verifyFarmMembership, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, farmId } = req.params
+    const role = req.body._userRole
+
+    if (role === 'viewer') {
+      return res.status(403).json({ error: 'Viewers cannot delete animals' })
+    }
+
+    const db = getDbAdapter()
+    const usePostgres = isPostgres()
+
+    // Verify animal belongs to this farm
+    const animal = await db.queryOne<Animal>(
+      prepareSql('SELECT * FROM animals WHERE id = ? AND "farmId" = ?', usePostgres),
+      [id, farmId]
+    )
+
+    if (!animal) {
+      return res.status(404).json({ error: 'Animal not found' })
+    }
+
+    await db.run(
+      prepareSql('DELETE FROM animals WHERE id = ?', usePostgres),
+      [id]
+    )
+
+    res.json({ success: true, message: 'Animal deleted successfully' })
+  } catch (error) {
+    console.error('Delete animal error:', error)
+    res.status(500).json({ error: 'Failed to delete animal' })
+  }
+})
+
 export default router

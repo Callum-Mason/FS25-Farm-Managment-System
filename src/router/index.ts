@@ -81,6 +81,11 @@ const router = createRouter({
           path: 'account',
           name: 'account',
           component: () => import('../views/AccountSettings.vue')
+        },
+        {
+          path: 'storage',
+          name: 'storage',
+          component: () => import('../views/CropStorage.vue')
         }
       ]
     },

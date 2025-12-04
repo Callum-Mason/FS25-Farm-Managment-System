@@ -10,6 +10,8 @@ import fieldRoutes from './routes/fields.js'
 import animalRoutes from './routes/animals.js'
 import equipmentRoutes from './routes/equipment.js'
 import financeRoutes from './routes/finances.js'
+import activityRoutes from './routes/activity.js'
+import storageRoutes from './routes/storage.js'
 import { seedDatabase } from './seed.js'
 
 dotenv.config()
@@ -61,6 +63,8 @@ app.use('/api/farms', animalRoutes)
 app.use('/api/farms', equipmentRoutes)
 app.use('/api', equipmentRoutes) // Also mount for /api/equipment/:id routes
 app.use('/api/farms', financeRoutes)
+app.use('/api/farms', activityRoutes)
+app.use('/api/farms', storageRoutes)
 
 // Serve frontend
 if (process.env.NODE_ENV === 'production') {

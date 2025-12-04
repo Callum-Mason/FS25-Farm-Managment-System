@@ -133,6 +133,49 @@
       </div>
       <div v-else class="text-text/60 italic">No recent activity</div>
       </div>
+
+      <!-- Financial Trends -->
+      <div class="bg-white dark:bg-gray-800 rounded-card p-6 border-2 border-gray-200 dark:border-gray-700">
+        <h3 class="text-xl font-bold text-primary mb-4">📊 Financial Trends (Last 12 Months)</h3>
+        <div v-if="financialTrends.length > 0" class="space-y-4">
+          <div v-for="trend in financialTrends.slice(-6)" :key="trend.key" class="flex items-center justify-between">
+            <div class="flex-1">
+              <p class="text-sm font-medium">{{ trend.month }}</p>
+              <div class="flex gap-2 mt-1">
+                <span class="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded">Income: £{{ trend.income.toLocaleString('en-GB') }}</span>
+                <span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2 py-1 rounded">Expenses: £{{ trend.expenses.toLocaleString('en-GB') }}</span>
+              </div>
+            </div>
+            <div :class="trend.net >= 0 ? 'text-green-600' : 'text-red-600'" class="font-bold text-lg">
+              {{ trend.net >= 0 ? '+' : '' }}£{{ trend.net.toLocaleString('en-GB') }}
+            </div>
+          </div>
+        </div>
+        <div v-else class="text-text/60 italic">Insufficient data for trends</div>
+      </div>
+
+      <!-- Profit by Crop -->
+      <div class="bg-white dark:bg-gray-800 rounded-card p-6 border-2 border-gray-200 dark:border-gray-700">
+        <h3 class="text-xl font-bold text-primary mb-4">🌾 Profit Analysis by Crop</h3>
+        <div v-if="cropProfitability.length > 0" class="space-y-3">
+          <div v-for="crop in cropProfitability" :key="crop.crop" class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <div class="flex justify-between items-center mb-2">
+              <span class="font-medium">{{ crop.crop }}</span>
+              <span :class="crop.profitMargin >= 0 ? 'text-green-600' : 'text-red-600'" class="font-bold">
+                {{ crop.profitMargin >= 0 ? '+' : '' }}{{ crop.profitMargin.toFixed(1) }}%
+              </span>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-xs text-text/70">
+              <div>Revenue: £{{ crop.revenue.toLocaleString('en-GB') }}</div>
+              <div>Costs: £{{ crop.costs.toLocaleString('en-GB') }}</div>
+              <div :class="crop.profit >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'">
+                Profit: £{{ crop.profit.toLocaleString('en-GB') }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="text-text/60 italic">No crop data available yet</div>
+      </div>
     </div>
   </div>
 </template>
@@ -243,6 +286,70 @@ const cropBreakdown = computed(() => {
       percentage: totalHectares.value > 0 ? (hectares / totalHectares.value * 100) : 0
     }))
     .sort((a, b) => b.hectares - a.hectares)
+})
+
+// Financial Trends - Group by month
+const financialTrends = computed(() => {
+  const trends: Record<string, { income: number; expenses: number; net: number }> = {}
+  
+  finances.value.forEach(f => {
+    const key = `${f.gameYear}-${String(f.gameMonth).padStart(2, '0')}`
+    if (!trends[key]) {
+      trends[key] = { income: 0, expenses: 0, net: 0 }
+    }
+    
+    if (f.type === 'income') {
+      trends[key].income += f.amount
+    } else {
+      trends[key].expenses += f.amount
+    }
+    trends[key].net = trends[key].income - trends[key].expenses
+  })
+  
+  return Object.entries(trends).map(([key, data]) => ({
+    key,
+    month: `Month ${key.split('-')[1]}`,
+    ...data
+  }))
+})
+
+// Crop Profitability Analysis
+const cropProfitability = computed(() => {
+  const crops: Record<string, { hectares: number; revenue: number; costs: number }> = {}
+  
+  // Aggregate field data
+  fields.value.forEach(field => {
+    if (field.currentCrop) {
+      if (!crops[field.currentCrop]) {
+        crops[field.currentCrop] = { hectares: 0, revenue: 0, costs: 0 }
+      }
+      crops[field.currentCrop].hectares += field.sizeHectares || 0
+    }
+  })
+  
+  // Match finances to crops (simplified - looks for crop name in description)
+  finances.value.forEach(f => {
+    Object.keys(crops).forEach(crop => {
+      if (f.description.toLowerCase().includes(crop.toLowerCase())) {
+        if (f.type === 'income') {
+          crops[crop].revenue += f.amount
+        } else {
+          crops[crop].costs += f.amount
+        }
+      }
+    })
+  })
+  
+  return Object.entries(crops)
+    .map(([crop, data]) => ({
+      crop,
+      revenue: data.revenue,
+      costs: data.costs,
+      profit: data.revenue - data.costs,
+      profitMargin: data.revenue > 0 ? ((data.revenue - data.costs) / data.revenue * 100) : 0,
+      hectares: data.hectares
+    }))
+    .sort((a, b) => b.profit - a.profit)
 })
 
 const recentTransactions = computed(() => {

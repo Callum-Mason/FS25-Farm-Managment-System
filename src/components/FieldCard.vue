@@ -24,6 +24,21 @@
       </div>
     </div>
 
+    <!-- Field Warnings Section -->
+    <div v-if="fieldWarnings.length > 0 && !editing" class="mb-4 space-y-2">
+      <div
+        v-for="(warning, idx) in fieldWarnings"
+        :key="idx"
+        :class="getWarningClass(warning.type)"
+        class="p-3 rounded-lg border flex items-start gap-3"
+      >
+        <span class="text-lg">{{ warning.icon }}</span>
+        <div>
+          <p class="font-medium text-sm">{{ warning.message }}</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Recommendations Section -->
     <div v-if="editing && showRecommendations && recommendations.length > 0" class="mb-4 p-4 bg-secondary/10 dark:bg-secondary/20 rounded-lg">
       <h4 class="font-bold text-primary mb-2">
@@ -500,6 +515,7 @@ import { ref, reactive, watch, onMounted, computed } from 'vue'
 import { api } from '../utils/api'
 import { formatShortGameDate } from '../utils/gameDate'
 import { useFarmStore } from '../stores/farm'
+import { getFieldWarnings } from '../utils/fieldWarnings'
 
 const farmStore = useFarmStore()
 
@@ -838,6 +854,23 @@ const costPerUnit = computed(() => {
   }
   return totalCosts.value / ha
 })
+
+const fieldWarnings = computed(() => {
+  return getFieldWarnings(props.field)
+})
+
+function getWarningClass(type: string): string {
+  switch (type) {
+    case 'error':
+      return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
+    case 'warning':
+      return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-300'
+    case 'info':
+      return 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300'
+    default:
+      return 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800'
+  }
+}
 
 function formatCurrency(amount: number | undefined): string {
   if (amount === undefined || amount === null) return currencySymbol.value + '0.00'

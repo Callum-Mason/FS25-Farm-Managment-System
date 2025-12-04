@@ -334,4 +334,39 @@ router.post('/equipment/:id/sell', authenticateToken, async (req: AuthRequest, r
   }
 })
 
+// DELETE /api/farms/:farmId/equipment/:id - Delete equipment
+router.delete('/:farmId/equipment/:id', authenticateToken, verifyFarmMembership, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, farmId } = req.params
+    const role = req.body._userRole
+
+    if (role === 'viewer') {
+      return res.status(403).json({ error: 'Viewers cannot delete equipment' })
+    }
+
+    const db = getDbAdapter()
+    const usePostgres = isPostgres()
+
+    // Verify equipment belongs to this farm
+    const equipment = await db.queryOne<Equipment>(
+      prepareSql('SELECT * FROM equipment WHERE id = ? AND "farmId" = ?', usePostgres),
+      [id, farmId]
+    )
+
+    if (!equipment) {
+      return res.status(404).json({ error: 'Equipment not found' })
+    }
+
+    await db.run(
+      prepareSql('DELETE FROM equipment WHERE id = ?', usePostgres),
+      [id]
+    )
+
+    res.json({ success: true, message: 'Equipment deleted successfully' })
+  } catch (error) {
+    console.error('Delete equipment error:', error)
+    res.status(500).json({ error: 'Failed to delete equipment' })
+  }
+})
+
 export default router

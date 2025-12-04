@@ -573,6 +573,102 @@ const migrations = [
         console.log(`      ✓ All production tracking columns already exist`);
       }
     }
+  },
+  {
+    name: '004_add_activity_log',
+    description: 'Add activity log table for tracking multi-user actions',
+    postgres: `
+      CREATE TABLE IF NOT EXISTS activity_log (
+        id SERIAL PRIMARY KEY,
+        "farmId" INTEGER NOT NULL,
+        "userId" INTEGER NOT NULL,
+        action TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id INTEGER,
+        description TEXT,
+        "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ("farmId") REFERENCES farms(id) ON DELETE CASCADE,
+        FOREIGN KEY ("userId") REFERENCES users(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX idx_activity_log_farm ON activity_log("farmId");
+      CREATE INDEX idx_activity_log_user ON activity_log("userId");
+      CREATE INDEX idx_activity_log_created ON activity_log("createdAt" DESC);
+    `,
+    sqlite: `
+      -- SQLite: Create activity log table
+    `,
+    sqliteCustom: async (db) => {
+      // Create activity log table for SQLite
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS activity_log (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          "farmId" INTEGER NOT NULL,
+          "userId" INTEGER NOT NULL,
+          action TEXT NOT NULL,
+          entity_type TEXT NOT NULL,
+          entity_id INTEGER,
+          description TEXT,
+          "createdAt" DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY ("farmId") REFERENCES farms(id) ON DELETE CASCADE,
+          FOREIGN KEY ("userId") REFERENCES users(id) ON DELETE CASCADE
+        );
+      `);
+
+      await db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_activity_log_farm ON activity_log("farmId");
+        CREATE INDEX IF NOT EXISTS idx_activity_log_user ON activity_log("userId");
+        CREATE INDEX IF NOT EXISTS idx_activity_log_created ON activity_log("createdAt");
+      `);
+      
+      console.log(`      ✓ Activity log table created`);
+    }
+  },
+  {
+    name: '005_add_crop_storage',
+    description: 'Add crop storage/inventory tracking table',
+    postgres: `
+      CREATE TABLE IF NOT EXISTS crop_storage (
+        id SERIAL PRIMARY KEY,
+        "farmId" INTEGER NOT NULL,
+        crop_name VARCHAR(100) NOT NULL,
+        quantity_stored DECIMAL(15, 2) NOT NULL DEFAULT 0,
+        storage_location VARCHAR(255),
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        notes TEXT,
+        FOREIGN KEY ("farmId") REFERENCES farms(id) ON DELETE CASCADE,
+        UNIQUE("farmId", crop_name)
+      );
+
+      CREATE INDEX idx_crop_storage_farm ON crop_storage("farmId");
+      CREATE INDEX idx_crop_storage_crop ON crop_storage(crop_name);
+    `,
+    sqlite: `
+      -- SQLite: Create crop storage table
+    `,
+    sqliteCustom: async (db) => {
+      // Create crop storage table for SQLite
+      await db.exec(`
+        CREATE TABLE IF NOT EXISTS crop_storage (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          "farmId" INTEGER NOT NULL,
+          crop_name VARCHAR(100) NOT NULL,
+          quantity_stored DECIMAL(15, 2) NOT NULL DEFAULT 0,
+          storage_location VARCHAR(255),
+          last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
+          notes TEXT,
+          FOREIGN KEY ("farmId") REFERENCES farms(id) ON DELETE CASCADE,
+          UNIQUE("farmId", crop_name)
+        );
+      `);
+
+      await db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_crop_storage_farm ON crop_storage("farmId");
+        CREATE INDEX IF NOT EXISTS idx_crop_storage_crop ON crop_storage(crop_name);
+      `);
+      
+      console.log(`      ✓ Crop storage table created`);
+    }
   }
 ];
 
