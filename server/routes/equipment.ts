@@ -121,22 +121,50 @@ router.post('/:farmId/equipment', authenticateToken, verifyFarmMembership, async
 
     // If purchase price is provided, create a finance entry
     if (purchasePrice && purchasePrice > 0) {
-      const financeDate = purchaseDate || new Date().toISOString().split('T')[0]
-      await db.run(
-        prepareSql(`
-          INSERT INTO finances ("farmId", date, type, category, description, amount, "createdByUserId")
-          VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, usePostgres),
-        [
-          farmId,
-          financeDate,
-          'expense',
-          'Equipment Purchase',
-          `Purchased ${brand} ${model}`,
-          purchasePrice,
-          req.userId
-        ]
+      // Get farm game date
+      const farm = await db.queryOne<{currentYear: number, currentMonth: number, currentDay: number}>(
+        prepareSql('SELECT "currentYear", "currentMonth", "currentDay" FROM farms WHERE id = ?', usePostgres),
+        [farmId]
       )
+      
+      if (usePostgres) {
+        await db.run(
+          prepareSql(`
+            INSERT INTO finances ("farmId", date, "gameYear", "gameMonth", "gameDay", type, category, description, amount, "createdByUserId")
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `, usePostgres),
+          [
+            farmId,
+            purchaseDate || new Date().toISOString().slice(0, 10),
+            farm?.currentYear || 1,
+            farm?.currentMonth || 1,
+            farm?.currentDay || 1,
+            'expense',
+            'Equipment Purchase',
+            `Purchased ${brand} ${model}`,
+            purchasePrice,
+            req.userId
+          ]
+        )
+      } else {
+        await db.run(
+          prepareSql(`
+            INSERT INTO finances ("farmId", "gameYear", "gameMonth", "gameDay", type, category, description, amount, "createdByUserId")
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `, usePostgres),
+          [
+            farmId,
+            farm?.currentYear || 1,
+            farm?.currentMonth || 1,
+            farm?.currentDay || 1,
+            'expense',
+            'Equipment Purchase',
+            `Purchased ${brand} ${model}`,
+            purchasePrice,
+            req.userId
+          ]
+        )
+      }
     }
 
     const equipmentItem = await db.queryOne<Equipment>(
@@ -301,21 +329,50 @@ router.post('/equipment/:id/sell', authenticateToken, async (req: AuthRequest, r
     )
 
     // Create finance entry for the sale (positive income)
-    await db.run(
-      prepareSql(`
-        INSERT INTO finances ("farmId", date, type, category, description, amount, "createdByUserId")
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `, usePostgres),
-      [
-        equipment.farmId,
-        financeDate,
-        'income',
-        'Equipment Sale',
-        `Sold ${equipment.brand} ${equipment.model}`,
-        salePrice,
-        req.userId
-      ]
+    // Get farm game date
+    const farm = await db.queryOne<{currentYear: number, currentMonth: number, currentDay: number}>(
+      prepareSql('SELECT "currentYear", "currentMonth", "currentDay" FROM farms WHERE id = ?', usePostgres),
+      [equipment.farmId]
     )
+    
+    if (usePostgres) {
+      await db.run(
+        prepareSql(`
+          INSERT INTO finances ("farmId", date, "gameYear", "gameMonth", "gameDay", type, category, description, amount, "createdByUserId")
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, usePostgres),
+        [
+          equipment.farmId,
+          financeDate,
+          farm?.currentYear || 1,
+          farm?.currentMonth || 1,
+          farm?.currentDay || 1,
+          'income',
+          'Equipment Sale',
+          `Sold ${equipment.brand} ${equipment.model}`,
+          salePrice,
+          req.userId
+        ]
+      )
+    } else {
+      await db.run(
+        prepareSql(`
+          INSERT INTO finances ("farmId", "gameYear", "gameMonth", "gameDay", type, category, description, amount, "createdByUserId")
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, usePostgres),
+        [
+          equipment.farmId,
+          farm?.currentYear || 1,
+          farm?.currentMonth || 1,
+          farm?.currentDay || 1,
+          'income',
+          'Equipment Sale',
+          `Sold ${equipment.brand} ${equipment.model}`,
+          salePrice,
+          req.userId
+        ]
+      )
+    }
 
     const updatedEquipment = await db.queryOne<Equipment>(
       prepareSql(`

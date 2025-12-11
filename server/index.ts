@@ -13,6 +13,7 @@ import financeRoutes from './routes/finances.js'
 import activityRoutes from './routes/activity.js'
 import storageRoutes from './routes/storage.js'
 import importRoutes from './routes/import.js'
+import docsRoutes from './routes/docs.js'
 import { seedDatabase } from './seed.js'
 
 dotenv.config()
@@ -26,6 +27,14 @@ const PORT = process.env.PORT || 3000
 // Middleware
 app.use(express.json())
 
+// Request logging in development
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`)
+    next()
+  })
+}
+
 // API routes - Register BEFORE server starts
 app.use('/api/auth', authRoutes)
 app.use('/api/farms', farmRoutes)
@@ -38,6 +47,7 @@ app.use('/api/farms', financeRoutes)
 app.use('/api/farms', activityRoutes)
 app.use('/api/farms', storageRoutes)
 app.use('/api/farms', importRoutes) // Import XML data from game
+app.use('/api/docs', docsRoutes) // API documentation
 
 // 404 handler for API routes
 app.use('/api/*', (req: Request, res: Response) => {
