@@ -26,6 +26,48 @@ const PORT = process.env.PORT || 3000
 // Middleware
 app.use(express.json())
 
+// API routes - Register BEFORE server starts
+app.use('/api/auth', authRoutes)
+app.use('/api/farms', farmRoutes)
+app.use('/api/farms', fieldRoutes)
+app.use('/api', fieldRoutes) // Also mount for /api/fields/:id routes
+app.use('/api/farms', animalRoutes)
+app.use('/api/farms', equipmentRoutes)
+app.use('/api', equipmentRoutes) // Also mount for /api/equipment/:id routes
+app.use('/api/farms', financeRoutes)
+app.use('/api/farms', activityRoutes)
+app.use('/api/farms', storageRoutes)
+app.use('/api/farms', importRoutes) // Import XML data from game
+
+// 404 handler for API routes
+app.use('/api/*', (req: Request, res: Response) => {
+  res.status(404).json({ error: 'API endpoint not found' })
+})
+
+// Serve frontend
+if (process.env.NODE_ENV === 'production') {
+  const distPath = join(process.cwd(), 'dist')
+  app.use(express.static(distPath))
+  
+  app.get('*', (req, res) => {
+    res.sendFile(join(distPath, 'index.html'))
+  })
+} else {
+  // Development: Use Vite middleware
+  const { createServer } = await import('vite')
+  const vite = await createServer({
+    server: { middlewareMode: true },
+    appType: 'spa'
+  })
+  app.use(vite.middlewares)
+}
+
+// Error handler
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error(err.stack)
+  res.status(500).json({ error: 'Something went wrong!' })
+})
+
 // Initialize database and start server (async)
 ;(async () => {
   try {
@@ -54,40 +96,3 @@ app.use(express.json())
 })()
 
 export { app }
-
-// API routes
-app.use('/api/auth', authRoutes)
-app.use('/api/farms', farmRoutes)
-app.use('/api/farms', fieldRoutes)
-app.use('/api', fieldRoutes) // Also mount for /api/fields/:id routes
-app.use('/api/farms', animalRoutes)
-app.use('/api/farms', equipmentRoutes)
-app.use('/api', equipmentRoutes) // Also mount for /api/equipment/:id routes
-app.use('/api/farms', financeRoutes)
-app.use('/api/farms', activityRoutes)
-app.use('/api/farms', storageRoutes)
-app.use('/api/farms', importRoutes) // Import XML data from game
-
-// Serve frontend
-if (process.env.NODE_ENV === 'production') {
-  const distPath = join(process.cwd(), 'dist')
-  app.use(express.static(distPath))
-  
-  app.get('*', (req, res) => {
-    res.sendFile(join(distPath, 'index.html'))
-  })
-} else {
-  // Development: Use Vite middleware
-  const { createServer } = await import('vite')
-  const vite = await createServer({
-    server: { middlewareMode: true },
-    appType: 'spa'
-  })
-  app.use(vite.middlewares)
-}
-
-// Error handler
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack)
-  res.status(500).json({ error: 'Something went wrong!' })
-})

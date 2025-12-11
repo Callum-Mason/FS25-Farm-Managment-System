@@ -10,13 +10,8 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3000,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: false
-      }
-    }
+    port: 3000
+    // No proxy needed - API routes handled by same Express server in middleware mode
   },
   test: {
     globals: true,
