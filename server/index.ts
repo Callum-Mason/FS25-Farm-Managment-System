@@ -12,6 +12,7 @@ import equipmentRoutes from './routes/equipment.js'
 import financeRoutes from './routes/finances.js'
 import activityRoutes from './routes/activity.js'
 import storageRoutes from './routes/storage.js'
+import importRoutes from './routes/import.js'
 import { seedDatabase } from './seed.js'
 
 dotenv.config()
@@ -65,6 +66,7 @@ app.use('/api', equipmentRoutes) // Also mount for /api/equipment/:id routes
 app.use('/api/farms', financeRoutes)
 app.use('/api/farms', activityRoutes)
 app.use('/api/farms', storageRoutes)
+app.use('/api/farms', importRoutes) // Import XML data from game
 
 // Serve frontend
 if (process.env.NODE_ENV === 'production') {

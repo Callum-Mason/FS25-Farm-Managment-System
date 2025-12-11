@@ -772,12 +772,7 @@ function getBaleDisplay(bales: BaleStorage[]): string {
 }
 
 function formatVolume(liters: number): string {
-  if (liters >= 1000000) {
-    return (liters / 1000000).toFixed(2) + 'M'
-  } else if (liters >= 1000) {
-    return (liters / 1000).toFixed(2) + 'k'
-  }
-  return Math.round(liters).toString()
+  return Math.round(liters).toLocaleString('en-GB')
 }
 
 function formatDate(dateStr: string): string {
