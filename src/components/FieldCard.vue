@@ -471,24 +471,143 @@
       <div class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Actual Yield (litres)
+            Actual Yield ({{ isGrassCrop ? 'bales' : 'litres' }})
           </label>
           <input
             v-model.number="harvestYield"
             type="number"
-            step="100"
+            step="1"
             min="0"
             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-            placeholder="How much did you harvest?"
+            :placeholder="isGrassCrop ? 'Number of bales' : 'How much did you harvest?'"
             autofocus
           />
-          <p v-if="field.expectedYield" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <p v-if="field.expectedYield && !isGrassCrop" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
             Expected: {{ field.expectedYield }} L
             <span v-if="harvestYield && field.expectedYield" 
               :class="harvestYield >= field.expectedYield ? 'text-green-600' : 'text-amber-600'">
               ({{ harvestYield >= field.expectedYield ? '+' : '' }}{{ ((harvestYield - field.expectedYield) / field.expectedYield * 100).toFixed(1) }}%)
             </span>
           </p>
+        </div>
+
+        <!-- Bale Configuration for Grass/Hay/Straw -->
+        <div v-if="isGrassCrop" class="space-y-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Bale Size (kg)
+            </label>
+            <select
+              v-model.number="baleSize"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            >
+              <option :value="null">Select bale size...</option>
+              <option value="180">180 kg</option>
+              <option value="220">220 kg</option>
+              <option value="240">240 kg</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Bale Shape
+            </label>
+            <div class="flex gap-2">
+              <label class="flex items-center gap-2 cursor-pointer flex-1">
+                <input
+                  v-model="baleShape"
+                  type="radio"
+                  value="round"
+                  class="w-4 h-4"
+                />
+                <span class="text-sm">🔵 Round</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer flex-1">
+                <input
+                  v-model="baleShape"
+                  type="radio"
+                  value="square"
+                  class="w-4 h-4"
+                />
+                <span class="text-sm">⬜ Square</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Straw Production Option (only for crops that produce straw: wheat, barley, etc.) -->
+        <div v-if="canProduceStraw && !isGrassCrop" class="space-y-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              v-model="produceStraw"
+              type="checkbox"
+              class="w-4 h-4"
+            />
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Also produce straw from this harvest
+            </span>
+          </label>
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            Straw will be stored separately as bales
+          </p>
+
+          <!-- Straw Bale Configuration (shown when straw is checked) -->
+          <div v-if="produceStraw" class="space-y-3 pt-3 border-t border-amber-300 dark:border-amber-700">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Straw Bale Size (kg)
+              </label>
+              <select
+                v-model.number="strawBaleSize"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option :value="null">Select bale size...</option>
+                <option value="180">180 kg</option>
+                <option value="220">220 kg</option>
+                <option value="240">240 kg</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Straw Bale Shape
+              </label>
+              <div class="flex gap-2">
+                <label class="flex items-center gap-2 cursor-pointer flex-1">
+                  <input
+                    v-model="strawBaleShape"
+                    type="radio"
+                    value="round"
+                    class="w-4 h-4"
+                  />
+                  <span class="text-sm">🔵 Round</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer flex-1">
+                  <input
+                    v-model="strawBaleShape"
+                    type="radio"
+                    value="square"
+                    class="w-4 h-4"
+                  />
+                  <span class="text-sm">⬜ Square</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Straw Yield (number of bales)
+              </label>
+              <input
+                v-model.number="strawYield"
+                type="number"
+                step="1"
+                min="0"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                placeholder="How many straw bales?"
+              />
+            </div>
+          </div>
         </div>
 
         <div class="flex gap-3">
@@ -500,7 +619,8 @@
           </button>
           <button
             @click="confirmHarvest"
-            class="flex-1 px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90"
+            :disabled="isGrassCrop && (!baleSize || !baleShape)"
+            class="flex-1 px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Confirm Harvest
           </button>
@@ -582,6 +702,12 @@ const editingCosts = ref(false)
 const savingCosts = ref(false)
 const showHarvestDialog = ref(false)
 const harvestYield = ref<number>(0)
+const baleSize = ref<number | null>(null)
+const baleShape = ref<string>('')
+const produceStraw = ref(false)
+const strawYield = ref<number>(0)
+const strawBaleSize = ref<number | null>(null)
+const strawBaleShape = ref<'round' | 'square'>('round')
 
 const editData = reactive({
   currentCrop: props.field.currentCrop,
@@ -668,6 +794,20 @@ watch(() => editData.growthStage, (newStage) => {
   }
 })
 
+// Detect if current crop is a grass/hay/straw crop that uses bales
+const isGrassCrop = computed(() => {
+  const grassCrops = ['grass', 'straw', 'hay', 'silage']
+  const cropName = props.field.currentCrop?.toLowerCase() || ''
+  return grassCrops.some(crop => cropName.includes(crop))
+})
+
+const canProduceStraw = computed(() => {
+  // Crops that can produce straw as a byproduct (not grass or hay)
+  const strawProducingCrops = ['wheat', 'barley', 'oat', 'sorghum', 'rye', 'corn']
+  const cropName = props.field.currentCrop?.toLowerCase() || ''
+  return strawProducingCrops.some(crop => cropName.includes(crop))
+})
+
 async function handleSave() {
   try {
     // Ensure we're not in "selecting from recommendation" mode
@@ -733,6 +873,8 @@ async function quickNextStage() {
   // If moving to Harvested, show dialog to record yield
   if (nextStage === 'Harvested') {
     harvestYield.value = props.field.expectedYield || 0
+    baleSize.value = null
+    baleShape.value = ''
     showHarvestDialog.value = true
     return
   }
@@ -768,7 +910,13 @@ async function confirmHarvest() {
       fertiliserState: props.field.fertiliserState,
       weedsState: props.field.weedsState,
       notes: props.field.notes,
-      actualYield: harvestYield.value || null
+      actualYield: harvestYield.value || null,
+      baleSize: baleSize.value,
+      baleShape: baleShape.value,
+      produceStraw: produceStraw.value,
+      strawYield: strawYield.value || null,
+      strawBaleSize: strawBaleSize.value,
+      strawBaleShape: strawBaleShape.value
     })
     
     showHarvestDialog.value = false
@@ -788,6 +936,12 @@ async function confirmHarvest() {
 function cancelHarvest() {
   showHarvestDialog.value = false
   harvestYield.value = 0
+  baleSize.value = null
+  baleShape.value = ''
+  produceStraw.value = false
+  strawYield.value = 0
+  strawBaleSize.value = null
+  strawBaleShape.value = 'round'
 }
 
 function formatDate(dateString: string) {

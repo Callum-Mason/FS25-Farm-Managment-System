@@ -33,6 +33,7 @@ cleanup-git-history.ps1
 cleanup-git-history-simple.ps1
 azure-deployment-outputs.json
 tools/
+temp.md
 
 # Legacy database scripts (replaced by unified migrate.cjs)
 server/database/add-field-history.cjs

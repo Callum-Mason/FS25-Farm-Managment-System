@@ -7,6 +7,30 @@ import { getCropRecommendations } from '../utils/cropRotation.js'
 
 const router = express.Router()
 
+// Helper function to determine storage unit for a crop
+function getStorageUnit(cropName: string): { unit: string; convertedValue: number; displayValue: string } {
+  const normalizedCrop = cropName.toLowerCase().trim()
+  
+  // Grass and straw crops stored as bales (1 bale = approximately 12.5L)
+  const balesCrops = ['grass', 'straw', 'hay', 'silage']
+  const isBalesCrop = balesCrops.some(crop => normalizedCrop.includes(crop))
+  
+  if (isBalesCrop) {
+    return {
+      unit: 'bales',
+      convertedValue: 12.5, // 1 bale ≈ 12.5L equivalent
+      displayValue: 'bales'
+    }
+  }
+  
+  // All other crops stored as liters
+  return {
+    unit: 'liters',
+    convertedValue: 1,
+    displayValue: 'L'
+  }
+}
+
 // PATCH /api/farms/:farmId/fields/bulk - Bulk update multiple fields
 router.patch('/:farmId/fields/bulk', authenticateToken, verifyFarmMembership, async (req: AuthRequest, res: Response) => {
   try {
@@ -150,7 +174,7 @@ router.patch('/fields/:id', authenticateToken, async (req: AuthRequest, res: Res
     }
 
     // Update field
-    const { name, sizeHectares, currentCrop, growthStage, fertiliserState, weedsState, notes, actualYield } = req.body
+    const { name, sizeHectares, currentCrop, growthStage, fertiliserState, weedsState, notes, actualYield, baleSize, baleShape, produceStraw, strawYield, strawBaleSize, strawBaleShape } = req.body
     
     // Get old field data to track changes
     const oldField = await db.queryOne<Field>(
@@ -169,8 +193,9 @@ router.patch('/fields/:id', authenticateToken, async (req: AuthRequest, res: Res
     if (weedsState !== undefined) { updates.push('"weedsState" = ?'); values.push(weedsState) }
     if (notes !== undefined) { updates.push('notes = ?'); values.push(notes) }
     if (actualYield !== undefined) { 
-      // Both SQLite and PostgreSQL use snake_case for this column
-      updates.push('actual_yield = ?')
+      // SQLite uses camelCase, PostgreSQL uses snake_case
+      const yieldCol = usePostgres ? 'actual_yield' : 'actualYield'
+      updates.push(`${usePostgres ? '' : ''}${yieldCol} = ?`)
       values.push(actualYield) 
     }
     
@@ -232,37 +257,96 @@ router.patch('/fields/:id', authenticateToken, async (req: AuthRequest, res: Res
           if (growthStage === 'Harvested' && actualYield !== undefined && actualYield > 0) {
             console.log(`🌾 AUTO-HARVEST: Attempting to add ${cropForHistory} (${actualYield}L) to storage for farm ${oldField.farmId}`)
             try {
+              // Determine if this is a bales crop (grass/straw) or liquid crop
+              const storageInfo = getStorageUnit(cropForHistory)
+              const storageQuantity = actualYield / storageInfo.convertedValue
+              
+              console.log(`🌾 AUTO-HARVEST: Crop type: ${storageInfo.unit}, converting ${actualYield}L to ${storageQuantity.toFixed(2)} ${storageInfo.unit}`)
+              
+              const tableAlias = usePostgres ? 'crop_storage' : 'cropStorage'
+              const farmCol = usePostgres ? '"farmId"' : 'farmId'
+              const cropCol = usePostgres ? 'crop_name' : 'cropName'
+              const qtyCol = usePostgres ? 'quantity_stored' : 'quantityStored'
+              const unitCol = usePostgres ? 'storage_unit' : 'storageUnit'
+              const locCol = usePostgres ? 'storage_location' : 'storageLocation'
+              const updCol = usePostgres ? 'last_updated' : 'lastUpdated'
+              
+              // Determine bale column name if this is a bale crop
+              let baleColName = ''
+              if (storageInfo.unit === 'bales' && baleSize && baleShape) {
+                if (baleSize === 180 && baleShape === 'round') {
+                  baleColName = usePostgres ? 'bale_180_round' : 'bale180Round'
+                } else if (baleSize === 180 && baleShape === 'square') {
+                  baleColName = usePostgres ? 'bale_180_square' : 'bale180Square'
+                } else if (baleSize === 220 && baleShape === 'round') {
+                  baleColName = usePostgres ? 'bale_220_round' : 'bale220Round'
+                } else if (baleSize === 220 && baleShape === 'square') {
+                  baleColName = usePostgres ? 'bale_220_square' : 'bale220Square'
+                } else if (baleSize === 240 && baleShape === 'round') {
+                  baleColName = usePostgres ? 'bale_240_round' : 'bale240Round'
+                } else if (baleSize === 240 && baleShape === 'square') {
+                  baleColName = usePostgres ? 'bale_240_square' : 'bale240Square'
+                }
+              }
+              
               // Check if storage entry already exists for this crop on this farm
               const existingStorage = await db.queryOne<any>(
                 prepareSql(`
-                  SELECT id, quantity_stored FROM crop_storage
-                  WHERE "farmId" = ? AND crop_name = ?
+                  SELECT * FROM ${tableAlias}
+                  WHERE ${farmCol} = ? AND ${cropCol} = ?
                 `, usePostgres),
                 [oldField.farmId, cropForHistory]
               )
 
               if (existingStorage) {
-                // Update existing storage - add to existing quantity
-                const newQuantity = existingStorage.quantity_stored + actualYield
-                console.log(`🌾 AUTO-HARVEST: Updating existing ${cropForHistory} storage from ${existingStorage.quantity_stored}L to ${newQuantity}L`)
-                await db.run(
-                  prepareSql(`
-                    UPDATE crop_storage
-                    SET quantity_stored = ?, last_updated = CURRENT_TIMESTAMP
-                    WHERE id = ?
-                  `, usePostgres),
-                  [newQuantity, existingStorage.id]
-                )
+                // Update existing storage - increment the appropriate bale column or quantity
+                if (storageInfo.unit === 'bales' && baleColName) {
+                  const currentBales = existingStorage[baleColName] || 0
+                  const newBales = currentBales + storageQuantity
+                  console.log(`🌾 AUTO-HARVEST: Adding ${storageQuantity.toFixed(0)} ${baleSize}kg ${baleShape} bales to existing storage (now ${newBales.toFixed(0)})`)
+                  await db.run(
+                    prepareSql(`
+                      UPDATE ${tableAlias}
+                      SET ${baleColName} = ${baleColName} + ?, ${updCol} = CURRENT_TIMESTAMP
+                      WHERE id = ?
+                    `, usePostgres),
+                    [storageQuantity, existingStorage.id]
+                  )
+                } else {
+                  // Liquid storage - add to existing quantity
+                  const newQuantity = (existingStorage.quantityStored || existingStorage.quantity_stored || 0) + storageQuantity
+                  console.log(`🌾 AUTO-HARVEST: Updating existing ${cropForHistory} storage to ${newQuantity.toFixed(2)} ${storageInfo.unit}`)
+                  await db.run(
+                    prepareSql(`
+                      UPDATE ${tableAlias}
+                      SET ${qtyCol} = ?, ${updCol} = CURRENT_TIMESTAMP
+                      WHERE id = ?
+                    `, usePostgres),
+                    [newQuantity, existingStorage.id]
+                  )
+                }
               } else {
                 // Create new storage entry
-                console.log(`🌾 AUTO-HARVEST: Creating NEW storage entry for ${cropForHistory} with ${actualYield}L`)
-                await db.run(
-                  prepareSql(`
-                    INSERT INTO crop_storage ("farmId", crop_name, quantity_stored, storage_location, notes, last_updated)
-                    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                  `, usePostgres),
-                  [oldField.farmId, cropForHistory, actualYield, null, `Harvested from Field ${oldField.fieldNumber}`]
-                )
+                if (storageInfo.unit === 'bales' && baleColName && baleSize && baleShape) {
+                  console.log(`🌾 AUTO-HARVEST: Creating NEW storage for ${cropForHistory} with ${storageQuantity.toFixed(0)} ${baleSize}kg ${baleShape} bales`)
+                  await db.run(
+                    prepareSql(`
+                      INSERT INTO ${tableAlias} (${farmCol}, ${cropCol}, ${unitCol}, ${baleColName}, ${locCol}, notes, ${updCol})
+                      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    `, usePostgres),
+                    [oldField.farmId, cropForHistory, storageInfo.unit, storageQuantity, null, `Harvested from Field ${oldField.fieldNumber}`]
+                  )
+                } else {
+                  // Liquid crop
+                  console.log(`🌾 AUTO-HARVEST: Creating NEW storage entry for ${cropForHistory} with ${storageQuantity.toFixed(2)} ${storageInfo.unit}`)
+                  await db.run(
+                    prepareSql(`
+                      INSERT INTO ${tableAlias} (${farmCol}, ${cropCol}, ${qtyCol}, ${unitCol}, ${locCol}, notes, ${updCol})
+                      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    `, usePostgres),
+                    [oldField.farmId, cropForHistory, storageQuantity, storageInfo.unit, null, `Harvested from Field ${oldField.fieldNumber}`]
+                  )
+                }
               }
               console.log(`✅ AUTO-HARVEST: Successfully added ${cropForHistory} to storage`)
             } catch (storageError) {
@@ -271,6 +355,84 @@ router.patch('/fields/:id', authenticateToken, async (req: AuthRequest, res: Res
             }
           } else {
             console.log(`🌾 AUTO-HARVEST: Skipped (stage: ${growthStage}, yield: ${actualYield})`)
+          }
+
+          // HANDLE STRAW PRODUCTION
+          const strawProducingCrops = ['wheat', 'barley', 'oat', 'sorghum', 'rye', 'corn']
+          if (produceStraw === true && strawYield !== undefined && strawYield > 0 && strawProducingCrops.includes(cropForHistory.toLowerCase())) {
+            console.log(`🌾 STRAW PRODUCTION: Creating straw storage for ${cropForHistory} harvest`)
+            try {
+              const tableAlias = usePostgres ? 'crop_storage' : 'cropStorage'
+              const farmCol = usePostgres ? '"farmId"' : 'farmId'
+              const cropCol = usePostgres ? 'crop_name' : 'cropName'
+              const unitCol = usePostgres ? 'storage_unit' : 'storageUnit'
+              const locCol = usePostgres ? 'storage_location' : 'storageLocation'
+              const updCol = usePostgres ? 'last_updated' : 'lastUpdated'
+
+              // Use user-provided straw yield directly (already in bale count)
+              const strawQuantity = strawYield
+              
+              // Determine bale column name for straw using strawBaleSize and strawBaleShape
+              let strawBaleColName = ''
+              if (strawBaleSize && strawBaleShape) {
+                if (strawBaleSize === 180 && strawBaleShape === 'round') {
+                  strawBaleColName = usePostgres ? 'bale_180_round' : 'bale180Round'
+                } else if (strawBaleSize === 180 && strawBaleShape === 'square') {
+                  strawBaleColName = usePostgres ? 'bale_180_square' : 'bale180Square'
+                } else if (strawBaleSize === 220 && strawBaleShape === 'round') {
+                  strawBaleColName = usePostgres ? 'bale_220_round' : 'bale220Round'
+                } else if (strawBaleSize === 220 && strawBaleShape === 'square') {
+                  strawBaleColName = usePostgres ? 'bale_220_square' : 'bale220Square'
+                } else if (strawBaleSize === 240 && strawBaleShape === 'round') {
+                  strawBaleColName = usePostgres ? 'bale_240_round' : 'bale240Round'
+                } else if (strawBaleSize === 240 && strawBaleShape === 'square') {
+                  strawBaleColName = usePostgres ? 'bale_240_square' : 'bale240Square'
+                }
+              }
+
+              // Check if straw storage already exists for this farm
+              const existingStrawStorage = await db.queryOne<any>(
+                prepareSql(`
+                  SELECT * FROM ${tableAlias}
+                  WHERE ${farmCol} = ? AND ${cropCol} = ?
+                `, usePostgres),
+                [oldField.farmId, 'Straw']
+              )
+
+              if (existingStrawStorage) {
+                // Update existing straw storage
+                if (strawBaleColName) {
+                  const currentBales = existingStrawStorage[strawBaleColName] || 0
+                  const newBales = currentBales + strawQuantity
+                  console.log(`🌾 STRAW PRODUCTION: Adding ${strawQuantity.toFixed(0)} ${strawBaleSize}kg ${strawBaleShape} straw bales to existing storage (now ${newBales.toFixed(0)})`)
+                  await db.run(
+                    prepareSql(`
+                      UPDATE ${tableAlias}
+                      SET ${strawBaleColName} = ${strawBaleColName} + ?, ${updCol} = CURRENT_TIMESTAMP
+                      WHERE id = ?
+                    `, usePostgres),
+                    [strawQuantity, existingStrawStorage.id]
+                  )
+                }
+              } else {
+                // Create new straw storage entry
+                if (strawBaleColName) {
+                  console.log(`🌾 STRAW PRODUCTION: Creating NEW straw storage with ${strawQuantity.toFixed(0)} ${strawBaleSize}kg ${strawBaleShape} bales`)
+                  const insertValues = [oldField.farmId, 'Straw', 'bales', strawQuantity, null, `Straw from ${cropForHistory} harvest, Field ${oldField.fieldNumber}`]
+                  await db.run(
+                    prepareSql(`
+                      INSERT INTO ${tableAlias} (${farmCol}, ${cropCol}, ${unitCol}, ${strawBaleColName}, ${locCol}, notes)
+                      VALUES (?, ?, ?, ?, ?, ?)
+                    `, usePostgres),
+                    insertValues
+                  )
+                }
+              }
+              console.log(`✅ STRAW PRODUCTION: Successfully added straw to storage`)
+            } catch (strawError) {
+              console.warn('❌ Warning: Failed to add straw to storage:', strawError)
+              // Don't fail the harvest if straw storage update fails
+            }
           }
         }
       }

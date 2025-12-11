@@ -325,6 +325,29 @@ async function runMigrations() {
         FOREIGN KEY (field_id) REFERENCES fields(id) ON DELETE CASCADE,
         FOREIGN KEY (farm_id) REFERENCES farms(id) ON DELETE CASCADE
       );
+
+      CREATE TABLE IF NOT EXISTS crop_storage (
+        id SERIAL PRIMARY KEY,
+        "farmId" INTEGER NOT NULL,
+        crop_name TEXT NOT NULL,
+        quantity_stored REAL NOT NULL DEFAULT 0,
+        storage_unit TEXT DEFAULT 'liters',
+        bale_180_round INTEGER DEFAULT 0,
+        bale_180_square INTEGER DEFAULT 0,
+        bale_220_round INTEGER DEFAULT 0,
+        bale_220_square INTEGER DEFAULT 0,
+        bale_240_round INTEGER DEFAULT 0,
+        bale_240_square INTEGER DEFAULT 0,
+        storage_location TEXT,
+        notes TEXT,
+        last_updated TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ("farmId") REFERENCES farms(id) ON DELETE CASCADE,
+        UNIQUE("farmId", crop_name)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_crop_storage_farm ON crop_storage("farmId");
+      CREATE INDEX IF NOT EXISTS idx_crop_storage_crop ON crop_storage(crop_name);
+      CREATE INDEX IF NOT EXISTS idx_crop_storage_unit ON crop_storage(storage_unit);
     `)
 
     // Migration: Add game date columns to existing farms table if they don't exist
@@ -680,11 +703,32 @@ async function runMigrations() {
         FOREIGN KEY (farmId) REFERENCES farms(id) ON DELETE CASCADE
       );
 
+      CREATE TABLE IF NOT EXISTS cropStorage (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        farmId INTEGER NOT NULL,
+        cropName TEXT NOT NULL,
+        quantityStored REAL NOT NULL DEFAULT 0,
+        storageUnit TEXT DEFAULT 'liters',
+        bale180Round INTEGER DEFAULT 0,
+        bale180Square INTEGER DEFAULT 0,
+        bale220Round INTEGER DEFAULT 0,
+        bale220Square INTEGER DEFAULT 0,
+        bale240Round INTEGER DEFAULT 0,
+        bale240Square INTEGER DEFAULT 0,
+        storageLocation TEXT,
+        notes TEXT,
+        lastUpdated TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (farmId) REFERENCES farms(id) ON DELETE CASCADE,
+        UNIQUE(farmId, cropName)
+      );
+
       CREATE INDEX IF NOT EXISTS idx_fieldHistory_field ON fieldHistory(fieldId);
       CREATE INDEX IF NOT EXISTS idx_fieldHistory_date ON fieldHistory(gameYear, gameMonth, gameDay);
       CREATE INDEX IF NOT EXISTS idx_fieldProductionRecords_field ON fieldProductionRecords(fieldId);
       CREATE INDEX IF NOT EXISTS idx_fieldProductionRecords_farm ON fieldProductionRecords(farmId);
       CREATE INDEX IF NOT EXISTS idx_fieldProductionRecords_status ON fieldProductionRecords(status);
+      CREATE INDEX IF NOT EXISTS idx_cropStorage_farm ON cropStorage(farmId);
+      CREATE INDEX IF NOT EXISTS idx_cropStorage_crop ON cropStorage(cropName);
     `)
     
     // Ensure areaUnit column exists in SQLite farms table (safe add)

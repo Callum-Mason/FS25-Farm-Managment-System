@@ -669,6 +669,43 @@ const migrations = [
       
       console.log(`      ✓ Crop storage table created`);
     }
+  },
+  {
+    name: '006_add_bales_support',
+    description: 'Add storage unit support for hay bales and straw bales',
+    postgres: `
+      ALTER TABLE crop_storage 
+      ADD COLUMN IF NOT EXISTS storage_unit VARCHAR(50) DEFAULT 'liters';
+
+      CREATE INDEX IF NOT EXISTS idx_crop_storage_unit ON crop_storage(storage_unit);
+    `,
+    sqlite: `
+      -- SQLite: Add storage unit column
+    `,
+    sqliteCustom: async (db) => {
+      try {
+        // Check if column already exists
+        const result = await db.all(`PRAGMA table_info(crop_storage)`);
+        const hasUnit = result.some((col) => col.name === 'storage_unit');
+        
+        if (!hasUnit) {
+          await db.exec(`
+            ALTER TABLE crop_storage 
+            ADD COLUMN storage_unit VARCHAR(50) DEFAULT 'liters';
+          `);
+          
+          await db.exec(`
+            CREATE INDEX IF NOT EXISTS idx_crop_storage_unit ON crop_storage(storage_unit);
+          `);
+          
+          console.log(`      ✓ Storage unit column added`);
+        } else {
+          console.log(`      ✓ Storage unit column already exists`);
+        }
+      } catch (error) {
+        console.log(`      ℹ Storage unit column (may already exist):`, error.message);
+      }
+    }
   }
 ];
 
